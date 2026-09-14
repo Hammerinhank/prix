@@ -1,0 +1,169 @@
+{
+ "version": 1,
+ "maj": "2026-09-14T11:31:03.284Z",
+ "tickets": [
+  {
+   "id": "mu15sno3745c",
+   "ajoute": "2026-09-14T11:31:03.283Z",
+   "photos": [
+    "photos/mu15sno3745c-mu15sno3n6nk.jpg"
+   ],
+   "magasin": "Intermarché",
+   "adresse": "SAS CALAO 139\n13-15 AV. NICOLAS AUSSEL\n06160 ANTIBES\nTEL : 04 92 91 40 60",
+   "date": "2026-09-14",
+   "devise": "EUR",
+   "produits": [
+    {
+     "nom": "DOC PROSEC.BL E.DRY",
+     "quantite": 1,
+     "prixUnitaire": 6.78,
+     "prixTotal": 6.78
+    },
+    {
+     "nom": "BQ1 POULET FERM. ESC",
+     "quantite": 1,
+     "prixUnitaire": 18.46,
+     "prixTotal": 18.46
+    },
+    {
+     "nom": "LINDEMANS KRIEK BTL",
+     "quantite": 1,
+     "prixUnitaire": 1.8,
+     "prixTotal": 1.8
+    },
+    {
+     "nom": "LINDEMANS KRIEK BTL",
+     "quantite": 1,
+     "prixUnitaire": 1.8,
+     "prixTotal": 1.8
+    },
+    {
+     "nom": "PERRIER PET 50CL",
+     "quantite": 1,
+     "prixUnitaire": 1.3,
+     "prixTotal": 1.3
+    },
+    {
+     "nom": "VRAI YRT BIO NATURE",
+     "quantite": 1,
+     "prixUnitaire": 1.36,
+     "prixTotal": 1.36
+    },
+    {
+     "nom": "MELON GROS CALIBRE P",
+     "quantite": 1,
+     "prixUnitaire": 2.99,
+     "prixTotal": 2.99
+    },
+    {
+     "nom": "GD FERMAGE BEURRE SE",
+     "quantite": 1,
+     "prixUnitaire": 1.8,
+     "prixTotal": 1.8
+    },
+    {
+     "nom": "PAT CREME FRAICHE 30",
+     "quantite": 1,
+     "prixUnitaire": 0.9,
+     "prixTotal": 0.9
+    },
+    {
+     "nom": "PSDT EMMENTAL RAPE 3",
+     "quantite": 1,
+     "prixUnitaire": 2.65,
+     "prixTotal": 2.65
+    },
+    {
+     "nom": "FM JAMBON SB SC 4T 1",
+     "quantite": 1,
+     "prixUnitaire": 2.18,
+     "prixTotal": 2.18
+    },
+    {
+     "nom": "HERTA POITRINE FUME",
+     "quantite": 1,
+     "prixUnitaire": 3.04,
+     "prixTotal": 3.04
+    },
+    {
+     "nom": "ALVALLE GAZPACHO 1L",
+     "quantite": 1,
+     "prixUnitaire": 3.49,
+     "prixTotal": 3.49
+    },
+    {
+     "nom": "LAITUE BATAVIA BLOND",
+     "quantite": 1,
+     "prixUnitaire": 1.89,
+     "prixTotal": 1.89
+    },
+    {
+     "nom": "CDF SHP HLE AMANDE D",
+     "quantite": 1,
+     "prixUnitaire": 3.98,
+     "prixTotal": 3.98
+    },
+    {
+     "nom": "PDT SALADE RISSOLEE",
+     "quantite": 1,
+     "prixUnitaire": 3.79,
+     "prixTotal": 3.79
+    },
+    {
+     "nom": "POIRE GUYOT VRAC",
+     "quantite": 0.748,
+     "prixUnitaire": 2.99,
+     "prixTotal": 2.24
+    },
+    {
+     "nom": "ORANGE GROS CALIBRE",
+     "quantite": 0.32,
+     "prixUnitaire": 3.29,
+     "prixTotal": 1.05
+    },
+    {
+     "nom": "TOMATE RONDE EN GRAP",
+     "quantite": 0.614,
+     "prixUnitaire": 6.99,
+     "prixTotal": 4.29
+    },
+    {
+     "nom": "LABELL PH 18 RLX 2P",
+     "quantite": 1,
+     "prixUnitaire": 3.28,
+     "prixTotal": 3.28
+    },
+    {
+     "nom": "Vignette MOULINEX",
+     "quantite": 1,
+     "prixUnitaire": 0,
+     "prixTotal": 0
+    },
+    {
+     "nom": "10E=1Vignette",
+     "quantite": 6,
+     "prixUnitaire": 0,
+     "prixTotal": 0
+    },
+    {
+     "nom": "Total Vign. MOULINEX",
+     "quantite": 7,
+     "prixUnitaire": 0,
+     "prixTotal": 0
+    },
+    {
+     "nom": "BON DE REDUCTION",
+     "quantite": 1,
+     "prixUnitaire": -0.15,
+     "prixTotal": -0.15
+    }
+   ],
+   "totalIndique": 68.92,
+   "sommeLignes": 68.92,
+   "totalCoherent": true,
+   "commentaire": "Ouverture du magasin du lundi au samedi de 8h00 à 20h30, et le dimanche de 8h00 à 12h30. Paiement par CB sans contact. Nombre d'articles vendus : 20. Récapitulatif TVA : 5.50% (HT 48.75, TVA 2.68, TTC 51.43) et 20.00% (HT 14.70, TVA 2.94, TTC 17.64). Total TVA : HT 63.45, TVA 5.62, TTC 69.07. Carte de fidélité numéro 3250390283071145070, ancien et nouveau solde à 0.00. Offres fidélité valables jusqu'au 11 octobre 2026. Collecte de 7 vignettes Moulinex (1 vignette pour 10€ d'achat).",
+   "avisPrix": "Les prix sont globalement normaux pour un supermarché Intermarché. Le poulet fermier (18.46 EUR) et les tomates rondes en grappe (6.99 EUR/kg) semblent un peu chers. Le Perrier 50cl à 1.30 EUR est également légèrement au-dessus de la moyenne.",
+   "modifie": "2026-09-14T11:31:03.283Z"
+  }
+ ]
+}
