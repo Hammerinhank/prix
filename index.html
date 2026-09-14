@@ -1,18 +1,1007 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Prix</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prix — tickets de caisse</title>
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f5f5f7; color:#1d1d1f; text-align:center; padding:60px 20px; }
-  h1 { color:#0071e3; }
-  p { color:#86868b; }
+:root{
+  --fond:#12151c;
+  --surface:#1b2029;
+  --surface2:#232935;
+  --bord:#333b49;
+  --texte:#e7e9ee;
+  --doux:#9aa3b2;
+  --papier:#f5efe3;
+  --encre:#23262d;
+  --ambre:#ffb703;
+  --vert:#35b37e;
+  --rouge:#e04f43;
+  --bleu:#5aa9e6;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--fond);color:var(--texte);
+  font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  padding:0 12px calc(40px + env(safe-area-inset-bottom));
+}
+h1,h2,h3{margin:0;font-weight:600}
+button{font:inherit;cursor:pointer}
+input,select,textarea{font:inherit;color:var(--texte);background:var(--surface2);border:1px solid var(--bord);border-radius:8px;padding:8px 10px;width:100%}
+input:focus,select,textarea:focus{outline:2px solid var(--bleu);outline-offset:1px}
+label{display:block;font-size:13px;color:var(--doux);margin:10px 0 4px}
+
+/* ---------- en-tête ---------- */
+header{
+  position:sticky;top:0;z-index:30;background:var(--fond);
+  display:flex;align-items:center;gap:10px;
+  padding:calc(8px + env(safe-area-inset-top)) 0 8px;
+  border-bottom:1px solid var(--bord);
+}
+header h1{font-size:20px;letter-spacing:.5px;flex:1}
+header h1 small{display:block;font-size:11px;font-weight:400;color:var(--doux);letter-spacing:0}
+#btnRoue{background:none;border:none;font-size:24px;padding:2px 4px;line-height:1}
+#badgeVersion{
+  background:var(--ambre);color:#20242c;border:none;border-radius:999px;
+  font-weight:700;font-size:15px;padding:7px 14px;font-family:var(--mono);
+}
+#badgeVersion.sale{background:var(--rouge);color:#fff}
+
+/* ---------- blocs ---------- */
+.bloc{background:var(--surface);border:1px solid var(--bord);border-radius:14px;padding:14px;margin-top:14px}
+.bloc > h2{font-size:15px;color:var(--ambre);margin-bottom:10px}
+.rangee{display:flex;gap:8px;flex-wrap:wrap}
+.rangee > *{flex:1 1 140px}
+.btn{
+  border:1px solid var(--bord);background:var(--surface2);color:var(--texte);
+  border-radius:10px;padding:12px 14px;font-weight:600;width:100%;
+}
+.btn.primaire{background:var(--ambre);color:#20242c;border-color:var(--ambre)}
+.btn.vert{background:var(--vert);color:#0d1a14;border-color:var(--vert)}
+.btn.rouge{background:var(--rouge);color:#fff;border-color:var(--rouge)}
+.btn.erreur{background:var(--rouge);color:#fff;border-color:var(--rouge);animation:pulse 1.2s ease-in-out 2}
+@keyframes pulse{50%{box-shadow:0 0 0 6px rgba(224,79,67,.25)}}
+.btn:disabled{opacity:.45}
+.btn.petit{padding:7px 10px;font-size:13px;width:auto;font-weight:500}
+.msg{margin-top:10px;padding:10px 12px;border-radius:10px;font-size:14px;display:none;white-space:pre-wrap}
+.msg.on{display:block}
+.msg.info{background:rgba(90,169,230,.12);border:1px solid var(--bleu)}
+.msg.ok{background:rgba(53,179,126,.12);border:1px solid var(--vert)}
+.msg.ko{background:rgba(224,79,67,.14);border:1px solid var(--rouge)}
+
+/* ---------- photos en cours ---------- */
+#vignettes{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px}
+.vignette{position:relative;flex:0 0 auto}
+.vignette img{height:110px;border-radius:10px;border:2px solid var(--bord);display:block}
+.vignette.envoyee img{border-color:var(--vert)}
+.vignette .num{
+  position:absolute;left:4px;top:4px;background:rgba(0,0,0,.65);color:#fff;
+  font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:6px
+}
+.vignette .sup{
+  position:absolute;right:4px;top:4px;background:rgba(0,0,0,.65);color:#fff;
+  border:none;border-radius:50%;width:24px;height:24px;font-size:14px;line-height:1
+}
+.vide{color:var(--doux);font-size:14px;padding:8px 0}
+
+/* ---------- fiche ticket (papier) ---------- */
+.papier{background:var(--papier);color:var(--encre);border-radius:4px;padding:14px}
+.papier label{color:#6a6256}
+.papier input,.papier textarea,.papier select{background:#fffdf8;color:var(--encre);border-color:#d8cfbe}
+.papier h3{font-size:14px;margin:16px 0 6px;color:#6a6256;border-bottom:1px dashed #c9bfa9;padding-bottom:4px}
+table.lignes{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px}
+table.lignes th{text-align:left;color:#6a6256;font-weight:500;font-size:11px;padding:4px 3px}
+table.lignes td{padding:2px 3px;vertical-align:middle}
+table.lignes input{padding:5px 6px;border-radius:5px;font-family:var(--mono);font-size:13px}
+table.lignes .num input{text-align:right}
+td.sup button{background:none;border:none;color:#a8341f;font-size:16px;padding:2px 4px}
+.totaux{font-family:var(--mono);font-size:14px;margin-top:10px;border-top:1px dashed #c9bfa9;padding-top:8px}
+.totaux div{display:flex;justify-content:space-between;padding:2px 0}
+.verdict{margin-top:6px;font-weight:600;font-size:13px}
+.verdict.ok{color:#1d7a4f}
+.verdict.ko{color:#a8341f}
+
+/* ---------- historique ---------- */
+details{background:var(--surface);border:1px solid var(--bord);border-radius:14px;margin-top:14px;overflow:hidden}
+summary{padding:14px;font-weight:600;color:var(--ambre);font-size:15px;list-style:none;cursor:pointer}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸ ";display:inline-block;transition:transform .15s}
+details[open] summary::before{transform:rotate(90deg)}
+.contenu{padding:0 14px 14px}
+.option{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--doux);margin:4px 0 12px}
+.option input{width:auto}
+.ticket{border:1px solid var(--bord);border-radius:12px;margin-bottom:10px;background:var(--surface2)}
+.ticket > .tete{display:flex;gap:10px;align-items:baseline;padding:11px 12px;cursor:pointer}
+.ticket .magasin{font-weight:600;flex:1}
+.ticket .date{font-family:var(--mono);font-size:12px;color:var(--doux)}
+.ticket .montant{font-family:var(--mono);font-weight:700;color:var(--ambre)}
+.ticket .corps{padding:0 12px 12px;display:none}
+.ticket.ouvert .corps{display:block}
+.ticket .ligne{display:flex;font-family:var(--mono);font-size:13px;gap:6px;padding:2px 0;border-bottom:1px dotted var(--bord)}
+.ticket .ligne .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ticket .ligne .p{white-space:nowrap}
+.comm{font-size:13px;color:var(--doux);margin-top:10px;white-space:pre-wrap}
+.comm b{color:var(--texte);display:block;margin-top:8px;font-size:12px}
+.photos{display:flex;gap:8px;overflow-x:auto;margin-top:10px}
+.photos img{height:150px;border-radius:8px;border:1px solid var(--bord)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+/* ---------- par produit ---------- */
+.produit{border-bottom:1px solid var(--bord);padding:9px 0}
+.produit .h{display:flex;gap:8px;align-items:baseline}
+.produit .nom{flex:1;font-weight:600;font-size:14px}
+.produit .stat{font-family:var(--mono);font-size:12px;color:var(--doux)}
+.produit .achats{margin-top:5px}
+.produit .achat{display:flex;gap:8px;font-family:var(--mono);font-size:12px;color:var(--doux);padding:1px 0}
+.produit .achat .pu{color:var(--texte);width:74px;text-align:right}
+.hausse{color:var(--rouge)}
+.baisse{color:var(--vert)}
+
+/* ---------- pages plein écran ---------- */
+.plein{
+  position:fixed;inset:0;z-index:50;background:var(--fond);overflow-y:auto;
+  padding:calc(12px + env(safe-area-inset-top)) 12px calc(40px + env(safe-area-inset-bottom));
+}
+.plein header{position:static;border:none}
+.hist-v{border-left:3px solid var(--ambre);padding:2px 0 2px 10px;margin:12px 0}
+.hist-v b{font-family:var(--mono);color:var(--ambre)}
+.hist-v p{margin:2px 0 0;font-size:14px;color:var(--doux)}
+.aide{font-size:12px;color:var(--doux);margin-top:4px}
+[hidden]{display:none !important}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
 </style>
 </head>
 <body>
-<h1>Prix</h1>
-<p>Nouvelle application créée avec Le Déployeur.</p>
-<p>Déploie ton code depuis l'étape 3 pour remplacer cette page.</p>
+
+<header>
+  <button id="btnRoue" title="Réglages" aria-label="Réglages">⚙️</button>
+  <h1>Prix<small>tickets de caisse analysés par Gemini</small></h1>
+  <button id="badgeVersion" title="Historique des versions">V1.0.0</button>
+</header>
+
+<!-- ====================== SAISIE ====================== -->
+<section class="bloc">
+  <h2>Nouveau ticket</h2>
+  <div id="vignettes"></div>
+  <p id="aucunePhoto" class="vide">Aucune photo. Un ticket long peut être photographié en plusieurs fois : toutes les photos ajoutées ici forment un seul ticket.</p>
+  <div class="rangee">
+    <button class="btn primaire" id="btnPhoto">📷 Prendre une photo</button>
+    <button class="btn" id="btnStocker">☁️ Stocker sur GitHub</button>
+  </div>
+  <div style="margin-top:8px">
+    <button class="btn vert" id="btnAnalyser">🤖 Analyser avec Gemini</button>
+  </div>
+  <div class="msg" id="msgSaisie"></div>
+  <input type="file" id="fichierPhoto" accept="image/*" capture="environment" hidden>
+</section>
+
+<!-- ====================== FICHE ====================== -->
+<section class="bloc" id="fiche" hidden>
+  <h2 id="titreFiche">Résultat de l'analyse</h2>
+  <div class="papier">
+    <label for="fMagasin">Magasin</label>
+    <input id="fMagasin" placeholder="Nom du magasin">
+    <label for="fAdresse">Adresse</label>
+    <input id="fAdresse" placeholder="Adresse relevée sur le ticket">
+    <div class="rangee">
+      <div><label for="fDate">Date d'achat</label><input id="fDate" type="date"></div>
+      <div><label for="fDevise">Devise</label><input id="fDevise" placeholder="EUR"></div>
+    </div>
+
+    <h3>Produits</h3>
+    <table class="lignes">
+      <thead><tr><th>Produit</th><th style="width:46px">Qté</th><th style="width:70px">P.U.</th><th style="width:74px">Total</th><th style="width:26px"></th></tr></thead>
+      <tbody id="corpsLignes"></tbody>
+    </table>
+    <button class="btn petit" id="btnLigne" style="margin-top:8px">➕ Ajouter une ligne</button>
+
+    <div class="totaux">
+      <div><span>Somme des lignes</span><b id="sommeLignes">0,00</b></div>
+      <div><span>Total imprimé sur le ticket</span><b><input id="fTotal" style="width:100px;text-align:right;font-family:var(--mono)" inputmode="decimal"></b></div>
+    </div>
+    <div class="verdict" id="verdict"></div>
+
+    <h3>Ce que Gemini a relevé</h3>
+    <textarea id="fCommentaire" rows="4" placeholder="Informations complémentaires lues sur la photo"></textarea>
+    <h3>Son avis sur les prix</h3>
+    <textarea id="fAvis" rows="4" placeholder="Appréciation des prix pratiqués"></textarea>
+  </div>
+  <div class="actions">
+    <button class="btn vert" id="btnEnregistrer" style="flex:2 1 160px">💾 Enregistrer le ticket</button>
+    <button class="btn" id="btnAnnulerFiche" style="flex:1 1 100px">Annuler</button>
+  </div>
+  <div class="msg" id="msgFiche"></div>
+</section>
+
+<!-- ====================== HISTORIQUE ====================== -->
+<details id="detHisto">
+  <summary>🧾 Historique des tickets (<span id="nbTickets">0</span>)</summary>
+  <div class="contenu">
+    <label class="option"><input type="checkbox" id="chkPhotos"> Afficher les photos</label>
+    <div id="listeTickets"></div>
+  </div>
+</details>
+
+<!-- ====================== PAR PRODUIT ====================== -->
+<details id="detProduits">
+  <summary>📈 Prix par produit</summary>
+  <div class="contenu">
+    <input id="rechProduit" placeholder="Rechercher un produit">
+    <label class="option" style="margin-top:10px"><input type="checkbox" id="chkUnique"> Afficher aussi les produits achetés une seule fois</label>
+    <div id="listeProduits"></div>
+  </div>
+</details>
+
+<!-- ====================== RÉGLAGES ====================== -->
+<div class="plein" id="pageParams" hidden>
+  <header>
+    <h1>Réglages</h1>
+    <button class="btn petit" id="btnFermerParams">✕ Fermer</button>
+  </header>
+
+  <section class="bloc">
+    <h2>Dépôt GitHub</h2>
+    <label for="pProprio">Propriétaire</label><input id="pProprio" placeholder="hammerinhank">
+    <label for="pDepot">Dépôt</label><input id="pDepot" placeholder="prix">
+    <label for="pBranche">Branche</label><input id="pBranche" placeholder="main">
+    <label for="pToken">Token GitHub</label><input id="pToken" type="password" placeholder="github_pat_…">
+    <p class="aide">Le token reste dans le stockage local de cet appareil. Il n'est jamais écrit dans les fichiers publiés.</p>
+    <button class="btn petit" id="btnTestGh" style="margin-top:10px">Tester l'accès au dépôt</button>
+    <div class="msg" id="msgGh"></div>
+  </section>
+
+  <section class="bloc">
+    <h2>Gemini</h2>
+    <label for="pCle">Clé API</label><input id="pCle" type="password" placeholder="AIza…">
+    <p class="aide">Elle aussi reste sur cet appareil uniquement : à saisir une fois par appareil.</p>
+    <label for="pModele">Modèle</label>
+    <select id="pModele">
+      <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+      <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+      <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+    </select>
+    <label for="pQuestion">Question envoyée avec la photo</label>
+    <textarea id="pQuestion" rows="12"></textarea>
+    <div class="rangee" style="margin-top:8px">
+      <button class="btn petit" id="btnInitQuestion">↺ Revenir au texte par défaut</button>
+    </div>
+    <p class="aide">La réponse doit rester au format JSON décrit dans la question : l'application s'appuie dessus pour remplir la fiche.</p>
+  </section>
+
+  <section class="bloc">
+    <h2>Données</h2>
+    <p class="aide">Fichier de données : <b id="infoFichier">prix.json</b> — photos rangées dans <b>photos/</b>.</p>
+    <div class="actions">
+      <button class="btn petit" id="btnRecharger">⟳ Recharger depuis GitHub</button>
+      <button class="btn petit" id="btnExport">⬇︎ Exporter le JSON</button>
+    </div>
+    <div class="msg" id="msgDonnees"></div>
+  </section>
+
+  <div style="height:20px"></div>
+  <button class="btn primaire" id="btnEnrParams">Enregistrer les réglages</button>
+</div>
+
+<!-- ====================== HISTORIQUE DES VERSIONS ====================== -->
+<div class="plein" id="pageVersions" hidden>
+  <header>
+    <h1>Historique des versions</h1>
+    <button class="btn petit" id="btnFermerVersions">✕ Fermer</button>
+  </header>
+  <div id="listeVersions"></div>
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================
+   VERSION
+   ========================================================= */
+const VERSION = "V1.0.0";
+const HISTORIQUE_VERSIONS = [
+  { v:"V1.0.0", d:"14/09/2026", t:"Version initiale : photos multiples par ticket, stockage sur GitHub (1 photo = 1 fichier), analyse par Gemini avec détection des non-tickets, fiche entièrement modifiable, historique repliable avec affichage optionnel des photos, vue « prix par produit », page de réglages." }
+];
+
+/* =========================================================
+   RÉGLAGES
+   ========================================================= */
+const QUESTION_DEFAUT = `Tu analyses la ou les photos jointes. Elles représentent un seul et même ticket de caisse (un ticket long peut être photographié en plusieurs morceaux).
+
+Réponds UNIQUEMENT par un objet JSON valide, sans texte autour, sans balises de code, au format exact suivant :
+
+{
+  "estTicket": true ou false,
+  "raison": "si estTicket vaut false, explique en une phrase ce que montre la photo",
+  "magasin": "nom de l'enseigne",
+  "adresse": "adresse complète si elle figure sur le ticket",
+  "date": "date d'achat au format AAAA-MM-JJ",
+  "devise": "EUR",
+  "produits": [
+    { "nom": "libellé du produit", "quantite": 1, "prixUnitaire": 0.00, "prixTotal": 0.00 }
+  ],
+  "totalIndique": 0.00,
+  "totalCoherent": true ou false,
+  "commentaire": "toute information complémentaire visible sur la photo : heure, caisse, moyen de paiement, remises, carte de fidélité, TVA, mentions particulières",
+  "avisPrix": "ton appréciation des prix des produits achetés : lesquels te semblent chers, normaux ou avantageux, et pourquoi"
+}
+
+Règles :
+- Si la photo n'est pas un ticket de caisse, renvoie estTicket = false et remplis "raison" ; les autres champs peuvent rester vides.
+- Reprends chaque ligne de produit, même les consignes, remises et petites lignes.
+- Les nombres sont des nombres, avec un point décimal, sans symbole monétaire.
+- Additionne toi-même les lignes et compare au total imprimé pour renseigner "totalCoherent".
+- N'invente jamais une valeur illisible : laisse la chaîne vide ou le nombre à 0.`;
+
+const REG_DEFAUT = {
+  proprio:"hammerinhank", depot:"prix", branche:"main", token:"",
+  cleGemini:"", modele:"gemini-2.5-flash", question:QUESTION_DEFAUT,
+  afficherPhotos:false, afficherUniques:false
+};
+const CLE_REG = "prix.reglages";
+let R = Object.assign({}, REG_DEFAUT);
+
+function chargerReglages(){
+  try{ Object.assign(R, JSON.parse(localStorage.getItem(CLE_REG)||"{}")); }catch(e){}
+  if(!R.question) R.question = QUESTION_DEFAUT;
+}
+function sauverReglages(){ localStorage.setItem(CLE_REG, JSON.stringify(R)); }
+
+/* =========================================================
+   ÉTAT
+   ========================================================= */
+const FICHIER = "prix.json";
+let donnees = { version:1, maj:null, tickets:[] };
+let shaDonnees = null;
+let ticketEnCours = { id:null, photos:[] };   // photos: {id, dataUrl, base64, chemin|null}
+let analyse = null;                            // objet en cours d'édition
+let ticketEdite = null;                        // id du ticket modifié, sinon null
+const cachePhotos = new Map();                 // chemin -> objectURL
+
+const $ = id => document.getElementById(id);
+
+function message(el, texte, type){
+  el.textContent = texte;
+  el.className = "msg on " + (type||"info");
+}
+function effacer(el){ el.className = "msg"; el.textContent = ""; }
+function nombre(x){ const n = parseFloat(String(x).replace(",", ".")); return isFinite(n) ? n : 0; }
+function fmt(n){ return nombre(n).toFixed(2).replace(".", ","); }
+function idCourt(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function echapper(s){ return String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function dateLisible(iso){
+  if(!iso) return "date inconnue";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+}
+
+/* =========================================================
+   GITHUB
+   ========================================================= */
+function urlContenu(chemin){
+  return `https://api.github.com/repos/${R.proprio}/${R.depot}/contents/${encodeURI(chemin)}`;
+}
+function enTetes(accept){
+  const h = { Accept: accept || "application/vnd.github+json" };
+  if(R.token) h.Authorization = "Bearer " + R.token;
+  return h;
+}
+function ghConfigure(){ return !!(R.proprio && R.depot && R.token); }
+
+async function ghSha(chemin){
+  const res = await fetch(urlContenu(chemin) + "?ref=" + encodeURIComponent(R.branche) + "&t=" + Date.now(), { headers: enTetes(), cache:"no-store" });
+  if(res.status === 404) return null;
+  if(!res.ok) throw new Error("GitHub " + res.status + " sur " + chemin);
+  const j = await res.json();
+  return j.sha || null;
+}
+// Lecture par le média « raw » : pas de limite de 1 Mo.
+async function ghLireTexte(chemin){
+  const res = await fetch(urlContenu(chemin) + "?ref=" + encodeURIComponent(R.branche) + "&t=" + Date.now(),
+    { headers: enTetes("application/vnd.github.raw"), cache:"no-store" });
+  if(res.status === 404) return null;
+  if(!res.ok) throw new Error("GitHub " + res.status + " sur " + chemin);
+  return await res.text();
+}
+async function ghLireBinaire(chemin){
+  const res = await fetch(urlContenu(chemin) + "?ref=" + encodeURIComponent(R.branche),
+    { headers: enTetes("application/vnd.github.raw") });
+  if(!res.ok) throw new Error("GitHub " + res.status + " sur " + chemin);
+  return await res.blob();
+}
+async function ghEcrire(chemin, base64, commentaire){
+  let sha = await ghSha(chemin);
+  for(let essai = 0; essai < 2; essai++){
+    const corps = { message: commentaire, content: base64, branch: R.branche };
+    if(sha) corps.sha = sha;
+    const res = await fetch(urlContenu(chemin), {
+      method:"PUT",
+      headers: Object.assign({ "Content-Type":"application/json" }, enTetes()),
+      body: JSON.stringify(corps)
+    });
+    if(res.ok) return await res.json();
+    if((res.status === 409 || res.status === 422) && essai === 0){ sha = await ghSha(chemin); continue; }
+    let detail = "";
+    try{ detail = (await res.json()).message || ""; }catch(e){}
+    throw new Error("Écriture refusée (" + res.status + ") sur " + chemin + (detail ? " — " + detail : ""));
+  }
+}
+function texteVersBase64(txt){
+  const octets = new TextEncoder().encode(txt);
+  let bin = "";
+  for(const o of octets) bin += String.fromCharCode(o);
+  return btoa(bin);
+}
+async function blobVersBase64(blob){
+  const buf = new Uint8Array(await blob.arrayBuffer());
+  let bin = "";
+  for(let i = 0; i < buf.length; i += 8192) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 8192));
+  return btoa(bin);
+}
+
+/* =========================================================
+   DONNÉES
+   ========================================================= */
+async function chargerDonnees(silencieux){
+  if(!ghConfigure()){
+    if(!silencieux) message($("msgSaisie"), "Renseigne d'abord le dépôt GitHub et le token dans les réglages (roue dentée en haut).", "ko");
+    return;
+  }
+  try{
+    const txt = await ghLireTexte(FICHIER);
+    if(txt === null){
+      donnees = { version:1, maj:null, tickets:[] };
+      shaDonnees = null;
+    }else{
+      const j = JSON.parse(txt);
+      donnees = { version: j.version || 1, maj: j.maj || null, tickets: Array.isArray(j.tickets) ? j.tickets : [] };
+      shaDonnees = await ghSha(FICHIER);
+    }
+    dessinerHistorique();
+    dessinerProduits();
+  }catch(e){
+    if(!silencieux) message($("msgSaisie"), "Lecture de " + FICHIER + " impossible : " + e.message, "ko");
+  }
+}
+async function enregistrerDonnees(commentaire){
+  donnees.maj = new Date().toISOString();
+  const txt = JSON.stringify(donnees, null, 1);
+  await ghEcrire(FICHIER, texteVersBase64(txt), commentaire);
+  shaDonnees = await ghSha(FICHIER);
+}
+
+/* =========================================================
+   PHOTOS
+   ========================================================= */
+function compresser(fichier, maxCote){
+  return new Promise((resolve, reject) => {
+    const lecteur = new FileReader();
+    lecteur.onerror = () => reject(new Error("Lecture du fichier impossible"));
+    lecteur.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Image illisible"));
+      img.onload = () => {
+        let { width:l, height:h } = img;
+        const f = Math.min(1, maxCote / Math.max(l, h));
+        l = Math.round(l * f); h = Math.round(h * f);
+        const c = document.createElement("canvas");
+        c.width = l; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, l, h);
+        resolve(c.toDataURL("image/jpeg", 0.82));
+      };
+      img.src = lecteur.result;
+    };
+    lecteur.readAsDataURL(fichier);
+  });
+}
+
+function dessinerVignettes(){
+  const z = $("vignettes");
+  z.innerHTML = "";
+  $("aucunePhoto").hidden = ticketEnCours.photos.length > 0;
+  ticketEnCours.photos.forEach((p, i) => {
+    const d = document.createElement("div");
+    d.className = "vignette" + (p.chemin ? " envoyee" : "");
+    d.innerHTML = `<img src="${p.dataUrl}" alt="Photo ${i+1} du ticket">
+      <span class="num">${i+1}${p.chemin ? " ☁︎" : ""}</span>
+      <button class="sup" title="Retirer cette photo">✕</button>`;
+    d.querySelector(".sup").onclick = () => {
+      if(!confirm("Retirer la photo " + (i+1) + " de ce ticket ?")) return;
+      ticketEnCours.photos.splice(i, 1);
+      dessinerVignettes();
+    };
+    z.appendChild(d);
+  });
+}
+
+$("btnPhoto").onclick = () => $("fichierPhoto").click();
+$("fichierPhoto").onchange = async e => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if(!f) return;
+  try{
+    const dataUrl = await compresser(f, 1600);
+    if(!ticketEnCours.id) ticketEnCours.id = idCourt();
+    ticketEnCours.photos.push({ id: idCourt(), dataUrl, base64: dataUrl.split(",")[1], chemin: null });
+    dessinerVignettes();
+    $("btnAnalyser").classList.remove("erreur");
+    message($("msgSaisie"), ticketEnCours.photos.length + " photo(s) dans ce ticket. Tu peux en ajouter d'autres, les stocker, puis lancer l'analyse.", "info");
+  }catch(err){
+    message($("msgSaisie"), "Photo inutilisable : " + err.message, "ko");
+  }
+};
+
+/* ---- envoi des photos sur GitHub, avec décompte ---- */
+async function stockerPhotos(){
+  const aFaire = ticketEnCours.photos.filter(p => !p.chemin);
+  if(!aFaire.length) return 0;
+  const total = aFaire.length;
+  let fait = 0;
+  for(const p of aFaire){
+    const chemin = "photos/" + ticketEnCours.id + "-" + p.id + ".jpg";
+    message($("msgSaisie"), `Envoi des photos : ${fait}/${total} envoyée(s), ${total - fait} restante(s)…`, "info");
+    await ghEcrire(chemin, p.base64, "Photo de ticket " + chemin);
+    p.chemin = chemin;
+    fait++;
+    dessinerVignettes();
+  }
+  message($("msgSaisie"), `Photos stockées : ${fait}/${total}, 0 restante.`, "ok");
+  return fait;
+}
+
+$("btnStocker").onclick = async () => {
+  if(!ticketEnCours.photos.length){ message($("msgSaisie"), "Prends d'abord au moins une photo.", "ko"); return; }
+  if(!ghConfigure()){ message($("msgSaisie"), "Dépôt GitHub ou token manquant : ouvre les réglages (roue dentée).", "ko"); return; }
+  $("btnStocker").disabled = true;
+  try{
+    const n = await stockerPhotos();
+    if(n === 0) message($("msgSaisie"), "Toutes les photos de ce ticket sont déjà sur GitHub.", "ok");
+  }catch(e){
+    message($("msgSaisie"), "Envoi interrompu : " + e.message, "ko");
+  }finally{
+    $("btnStocker").disabled = false;
+  }
+};
+
+/* =========================================================
+   GEMINI
+   ========================================================= */
+async function interrogerGemini(photosBase64){
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(R.modele)}:generateContent?key=${encodeURIComponent(R.cleGemini)}`;
+  const parts = [{ text: R.question }];
+  photosBase64.forEach(b => parts.push({ inline_data:{ mime_type:"image/jpeg", data:b } }));
+  const res = await fetch(url, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      contents:[{ role:"user", parts }],
+      generationConfig:{ temperature:0.2, maxOutputTokens:8192, responseMimeType:"application/json" }
+    })
+  });
+  if(!res.ok){
+    let d = "";
+    try{ d = (await res.json()).error.message; }catch(e){}
+    throw new Error("Gemini a refusé la requête (" + res.status + ")" + (d ? " — " + d : ""));
+  }
+  const j = await res.json();
+  const cand = j.candidates && j.candidates[0];
+  if(!cand) throw new Error("Gemini n'a renvoyé aucune réponse exploitable.");
+  let txt = (cand.content && cand.content.parts || []).map(p => p.text || "").join("").trim();
+  txt = txt.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  try{ return JSON.parse(txt); }
+  catch(e){ throw new Error("Réponse de Gemini illisible (JSON attendu) :\n" + txt.slice(0, 300)); }
+}
+
+$("btnAnalyser").onclick = async () => {
+  const b = $("btnAnalyser");
+  b.classList.remove("erreur");
+  if(!ticketEnCours.photos.length){ message($("msgSaisie"), "Prends d'abord au moins une photo.", "ko"); return; }
+  if(!R.cleGemini){ message($("msgSaisie"), "Clé API Gemini manquante : ouvre les réglages (roue dentée).", "ko"); return; }
+  b.disabled = true;
+  message($("msgSaisie"), "Analyse en cours (" + ticketEnCours.photos.length + " photo(s))…", "info");
+  try{
+    const rep = await interrogerGemini(ticketEnCours.photos.map(p => p.base64));
+    if(rep.estTicket === false){
+      b.classList.add("erreur");
+      message($("msgSaisie"), "Ce n'est pas un ticket de caisse.\n" + (rep.raison || "Gemini n'a pas reconnu de ticket sur cette photo."), "ko");
+      $("fiche").hidden = true;
+      return;
+    }
+    ticketEdite = null;
+    ouvrirFiche(normaliser(rep));
+    message($("msgSaisie"), "Ticket reconnu. Vérifie et corrige la fiche ci-dessous, puis enregistre-la.", "ok");
+  }catch(e){
+    b.classList.add("erreur");
+    message($("msgSaisie"), e.message, "ko");
+  }finally{
+    b.disabled = false;
+  }
+};
+
+function normaliser(rep){
+  return {
+    magasin: rep.magasin || "",
+    adresse: rep.adresse || "",
+    date: (/^\d{4}-\d{2}-\d{2}$/.test(rep.date || "") ? rep.date : ""),
+    devise: rep.devise || "EUR",
+    produits: (Array.isArray(rep.produits) ? rep.produits : []).map(p => ({
+      nom: p.nom || "",
+      quantite: nombre(p.quantite) || 1,
+      prixUnitaire: nombre(p.prixUnitaire),
+      prixTotal: nombre(p.prixTotal) || nombre(p.prixUnitaire) * (nombre(p.quantite) || 1)
+    })),
+    totalIndique: nombre(rep.totalIndique),
+    commentaire: rep.commentaire || "",
+    avisPrix: rep.avisPrix || ""
+  };
+}
+
+/* =========================================================
+   FICHE ÉDITABLE
+   ========================================================= */
+function ouvrirFiche(obj){
+  analyse = obj;
+  $("titreFiche").textContent = ticketEdite ? "Modifier le ticket" : "Résultat de l'analyse";
+  $("fMagasin").value = obj.magasin;
+  $("fAdresse").value = obj.adresse;
+  $("fDate").value = obj.date;
+  $("fDevise").value = obj.devise;
+  $("fTotal").value = obj.totalIndique ? fmt(obj.totalIndique) : "";
+  $("fCommentaire").value = obj.commentaire;
+  $("fAvis").value = obj.avisPrix;
+  dessinerLignes();
+  $("fiche").hidden = false;
+  effacer($("msgFiche"));
+  $("fiche").scrollIntoView({ behavior:"smooth", block:"start" });
+}
+
+function dessinerLignes(){
+  const tb = $("corpsLignes");
+  tb.innerHTML = "";
+  analyse.produits.forEach((p, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input data-c="nom" value="${echapper(p.nom)}"></td>
+      <td class="num"><input data-c="quantite" inputmode="decimal" value="${p.quantite}"></td>
+      <td class="num"><input data-c="prixUnitaire" inputmode="decimal" value="${fmt(p.prixUnitaire)}"></td>
+      <td class="num"><input data-c="prixTotal" inputmode="decimal" value="${fmt(p.prixTotal)}"></td>
+      <td class="sup"><button title="Supprimer la ligne">✕</button></td>`;
+    tr.querySelectorAll("input").forEach(inp => {
+      inp.oninput = () => {
+        const c = inp.dataset.c;
+        analyse.produits[i][c] = (c === "nom") ? inp.value : nombre(inp.value);
+        if(c === "quantite" || c === "prixUnitaire"){
+          analyse.produits[i].prixTotal = analyse.produits[i].quantite * analyse.produits[i].prixUnitaire;
+          tr.querySelector('[data-c="prixTotal"]').value = fmt(analyse.produits[i].prixTotal);
+        }
+        majTotaux();
+      };
+    });
+    tr.querySelector("button").onclick = () => { analyse.produits.splice(i, 1); dessinerLignes(); };
+    tb.appendChild(tr);
+  });
+  majTotaux();
+}
+
+function somme(){ return analyse.produits.reduce((s, p) => s + nombre(p.prixTotal), 0); }
+
+function majTotaux(){
+  const s = somme();
+  $("sommeLignes").textContent = fmt(s);
+  const t = nombre($("fTotal").value);
+  const v = $("verdict");
+  if(!t){ v.textContent = "Total imprimé non renseigné : impossible de vérifier."; v.className = "verdict"; return; }
+  const ecart = Math.abs(s - t);
+  if(ecart < 0.02){ v.textContent = "✅ Le total imprimé correspond à la somme des lignes."; v.className = "verdict ok"; }
+  else{ v.textContent = `⚠️ Écart de ${fmt(ecart)} entre la somme des lignes et le total imprimé.`; v.className = "verdict ko"; }
+}
+$("fTotal").oninput = () => { analyse.totalIndique = nombre($("fTotal").value); majTotaux(); };
+$("btnLigne").onclick = () => { analyse.produits.push({ nom:"", quantite:1, prixUnitaire:0, prixTotal:0 }); dessinerLignes(); };
+["fMagasin","fAdresse","fDate","fDevise","fCommentaire","fAvis"].forEach(id => {
+  const champ = { fMagasin:"magasin", fAdresse:"adresse", fDate:"date", fDevise:"devise", fCommentaire:"commentaire", fAvis:"avisPrix" }[id];
+  $(id).oninput = () => { if(analyse) analyse[champ] = $(id).value; };
+});
+$("btnAnnulerFiche").onclick = () => {
+  if(!confirm("Abandonner cette fiche sans l'enregistrer ?")) return;
+  $("fiche").hidden = true; analyse = null; ticketEdite = null;
+};
+
+$("btnEnregistrer").onclick = async () => {
+  if(!analyse) return;
+  if(!ghConfigure()){ message($("msgFiche"), "Dépôt GitHub ou token manquant : ouvre les réglages.", "ko"); return; }
+  $("btnEnregistrer").disabled = true;
+  try{
+    let cible;
+    if(ticketEdite){
+      cible = donnees.tickets.find(t => t.id === ticketEdite);
+      if(!cible) throw new Error("Ticket introuvable dans les données.");
+    }else{
+      message($("msgFiche"), "Envoi des photos…", "info");
+      await stockerPhotos();
+      cible = { id: ticketEnCours.id || idCourt(), ajoute: new Date().toISOString(), photos: ticketEnCours.photos.map(p => p.chemin).filter(Boolean) };
+      donnees.tickets.push(cible);
+    }
+    Object.assign(cible, {
+      magasin: analyse.magasin, adresse: analyse.adresse, date: analyse.date, devise: analyse.devise,
+      produits: analyse.produits, totalIndique: analyse.totalIndique, sommeLignes: +somme().toFixed(2),
+      totalCoherent: Math.abs(somme() - analyse.totalIndique) < 0.02 && !!analyse.totalIndique,
+      commentaire: analyse.commentaire, avisPrix: analyse.avisPrix, modifie: new Date().toISOString()
+    });
+    message($("msgFiche"), "Enregistrement de " + FICHIER + "…", "info");
+    await enregistrerDonnees((ticketEdite ? "Ticket modifié" : "Nouveau ticket") + " — " + (cible.magasin || "sans magasin") + " " + (cible.date || ""));
+    message($("msgFiche"), "Ticket enregistré.", "ok");
+    $("fiche").hidden = true;
+    analyse = null; ticketEdite = null;
+    ticketEnCours = { id:null, photos:[] };
+    dessinerVignettes();
+    effacer($("msgSaisie"));
+    dessinerHistorique(); dessinerProduits();
+    $("detHisto").open = true;
+  }catch(e){
+    message($("msgFiche"), "Enregistrement impossible : " + e.message + "\nLes données ne sont pas perdues : corrige et réessaie.", "ko");
+  }finally{
+    $("btnEnregistrer").disabled = false;
+  }
+};
+
+/* =========================================================
+   HISTORIQUE
+   ========================================================= */
+function triChrono(a, b){
+  const da = a.date || (a.ajoute || "").slice(0, 10);
+  const db = b.date || (b.ajoute || "").slice(0, 10);
+  if(da === db) return (b.ajoute || "").localeCompare(a.ajoute || "");
+  return db.localeCompare(da);
+}
+
+function dessinerHistorique(){
+  const z = $("listeTickets");
+  z.innerHTML = "";
+  $("nbTickets").textContent = donnees.tickets.length;
+  if(!donnees.tickets.length){
+    z.innerHTML = '<p class="vide">Aucun ticket enregistré. Photographie un ticket pour commencer.</p>';
+    return;
+  }
+  const liste = donnees.tickets.slice().sort(triChrono);
+  liste.forEach(t => {
+    const el = document.createElement("div");
+    el.className = "ticket";
+    const total = t.totalIndique || t.sommeLignes || 0;
+    el.innerHTML = `
+      <div class="tete">
+        <span class="magasin">${echapper(t.magasin || "Magasin non identifié")}</span>
+        <span class="date">${dateLisible(t.date)}</span>
+        <span class="montant">${fmt(total)}</span>
+      </div>
+      <div class="corps"></div>`;
+    const corps = el.querySelector(".corps");
+    el.querySelector(".tete").onclick = () => {
+      el.classList.toggle("ouvert");
+      if(el.classList.contains("ouvert") && !corps.dataset.rempli) remplirCorps(corps, t);
+    };
+    z.appendChild(el);
+  });
+}
+
+function remplirCorps(corps, t){
+  corps.dataset.rempli = "1";
+  let html = "";
+  if(t.adresse) html += `<div class="comm">${echapper(t.adresse)}</div>`;
+  html += (t.produits || []).map(p =>
+    `<div class="ligne"><span class="n">${echapper(p.nom)}${p.quantite > 1 ? " ×" + p.quantite : ""}</span><span class="p">${fmt(p.prixUnitaire)}</span><span class="p">${fmt(p.prixTotal)}</span></div>`
+  ).join("");
+  html += `<div class="ligne" style="border:none;margin-top:6px"><span class="n"><b>Total</b></span><span class="p"><b>${fmt(t.totalIndique || t.sommeLignes)}</b></span></div>`;
+  html += t.totalCoherent
+    ? `<div class="verdict ok" style="color:var(--vert)">✅ Total vérifié</div>`
+    : `<div class="verdict ko" style="color:var(--rouge)">⚠️ Total non vérifié (somme des lignes : ${fmt(t.sommeLignes)})</div>`;
+  if(t.commentaire) html += `<div class="comm"><b>Relevé sur la photo</b>${echapper(t.commentaire)}</div>`;
+  if(t.avisPrix) html += `<div class="comm"><b>Avis sur les prix</b>${echapper(t.avisPrix)}</div>`;
+  html += `<div class="photos" data-photos></div>`;
+  html += `<div class="actions">
+      <button class="btn petit" data-act="modifier">✏️ Modifier</button>
+      <button class="btn petit" data-act="photos">🖼 Afficher les photos</button>
+      <button class="btn petit rouge" data-act="supprimer">🗑 Supprimer</button>
+    </div>`;
+  corps.innerHTML = html;
+  corps.querySelector('[data-act="modifier"]').onclick = () => modifierTicket(t);
+  corps.querySelector('[data-act="supprimer"]').onclick = () => supprimerTicket(t);
+  corps.querySelector('[data-act="photos"]').onclick = () => chargerPhotosTicket(corps, t);
+  if(R.afficherPhotos) chargerPhotosTicket(corps, t);
+}
+
+async function chargerPhotosTicket(corps, t){
+  const z = corps.querySelector("[data-photos]");
+  if(z.dataset.charge) return;
+  z.dataset.charge = "1";
+  const chemins = t.photos || [];
+  if(!chemins.length){ z.innerHTML = '<span class="vide">Aucune photo stockée pour ce ticket.</span>'; return; }
+  let fait = 0;
+  for(const c of chemins){
+    z.dataset.etat = `${fait}/${chemins.length}`;
+    try{
+      let url = cachePhotos.get(c);
+      if(!url){ url = URL.createObjectURL(await ghLireBinaire(c)); cachePhotos.set(c, url); }
+      const img = new Image();
+      img.src = url; img.alt = "Photo du ticket";
+      z.appendChild(img);
+    }catch(e){
+      const s = document.createElement("span");
+      s.className = "vide";
+      s.textContent = "Photo illisible (" + c + ")";
+      z.appendChild(s);
+    }
+    fait++;
+  }
+}
+
+function modifierTicket(t){
+  ticketEdite = t.id;
+  ticketEnCours = { id: t.id, photos: (t.photos || []).map(c => ({ id: c, dataUrl:"", base64:"", chemin:c })) };
+  ouvrirFiche({
+    magasin: t.magasin || "", adresse: t.adresse || "", date: t.date || "", devise: t.devise || "EUR",
+    produits: (t.produits || []).map(p => Object.assign({}, p)),
+    totalIndique: t.totalIndique || 0, commentaire: t.commentaire || "", avisPrix: t.avisPrix || ""
+  });
+}
+
+async function supprimerTicket(t){
+  if(!confirm("Supprimer définitivement le ticket « " + (t.magasin || "sans magasin") + " » du " + dateLisible(t.date) + " ?\nLes fichiers photos resteront dans le dépôt.")) return;
+  donnees.tickets = donnees.tickets.filter(x => x.id !== t.id);
+  try{
+    await enregistrerDonnees("Suppression d'un ticket");
+    dessinerHistorique(); dessinerProduits();
+  }catch(e){
+    alert("Suppression non enregistrée sur GitHub : " + e.message);
+    await chargerDonnees(true);
+  }
+}
+
+$("chkPhotos").onchange = () => {
+  R.afficherPhotos = $("chkPhotos").checked;
+  sauverReglages();
+  document.querySelectorAll("#listeTickets .corps").forEach(c => { c.innerHTML = ""; delete c.dataset.rempli; });
+  document.querySelectorAll("#listeTickets .ticket.ouvert").forEach(el => {
+    const t = donnees.tickets.slice().sort(triChrono)[[...document.querySelectorAll("#listeTickets .ticket")].indexOf(el)];
+    if(t) remplirCorps(el.querySelector(".corps"), t);
+  });
+};
+
+/* =========================================================
+   PRIX PAR PRODUIT
+   ========================================================= */
+function cle(nom){
+  return String(nom || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function dessinerProduits(){
+  const z = $("listeProduits");
+  const recherche = cle($("rechProduit").value);
+  const groupes = new Map();
+  donnees.tickets.forEach(t => {
+    (t.produits || []).forEach(p => {
+      const k = cle(p.nom);
+      if(!k) return;
+      if(!groupes.has(k)) groupes.set(k, { nom:p.nom, achats:[] });
+      groupes.get(k).achats.push({
+        date: t.date || (t.ajoute || "").slice(0, 10),
+        magasin: t.magasin || "—",
+        pu: nombre(p.prixUnitaire) || (nombre(p.prixTotal) / (nombre(p.quantite) || 1))
+      });
+    });
+  });
+  let liste = [...groupes.entries()]
+    .filter(([k, g]) => (R.afficherUniques || g.achats.length > 1) && (!recherche || k.includes(recherche)))
+    .sort((a, b) => b[1].achats.length - a[1].achats.length || a[0].localeCompare(b[0]));
+
+  if(!liste.length){
+    z.innerHTML = '<p class="vide">Rien à comparer pour l\'instant. Les produits apparaissent ici dès qu\'ils ont été achetés au moins deux fois.</p>';
+    return;
+  }
+  z.innerHTML = liste.map(([k, g]) => {
+    const achats = g.achats.slice().sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    const prix = achats.map(a => a.pu).filter(v => v > 0);
+    const min = Math.min.apply(null, prix), max = Math.max.apply(null, prix);
+    let precedent = null;
+    const lignes = achats.map(a => {
+      let fleche = "";
+      if(precedent !== null && a.pu > 0){
+        if(a.pu > precedent + 0.005) fleche = `<span class="hausse">▲ ${fmt(a.pu - precedent)}</span>`;
+        else if(a.pu < precedent - 0.005) fleche = `<span class="baisse">▼ ${fmt(precedent - a.pu)}</span>`;
+        else fleche = "=";
+      }
+      if(a.pu > 0) precedent = a.pu;
+      return `<div class="achat"><span style="width:78px">${dateLisible(a.date)}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${echapper(a.magasin)}</span>
+        <span class="pu">${fmt(a.pu)}</span><span style="width:64px">${fleche}</span></div>`;
+    }).join("");
+    return `<div class="produit">
+      <div class="h"><span class="nom">${echapper(g.nom)}</span>
+      <span class="stat">${achats.length} achat(s) · ${prix.length ? fmt(min) + " → " + fmt(max) : "prix inconnu"}</span></div>
+      <div class="achats">${lignes}</div>
+    </div>`;
+  }).join("");
+}
+$("rechProduit").oninput = dessinerProduits;
+$("chkUnique").onchange = () => { R.afficherUniques = $("chkUnique").checked; sauverReglages(); dessinerProduits(); };
+
+/* =========================================================
+   RÉGLAGES — PAGE
+   ========================================================= */
+$("btnRoue").onclick = () => {
+  $("pProprio").value = R.proprio; $("pDepot").value = R.depot; $("pBranche").value = R.branche;
+  $("pToken").value = R.token; $("pCle").value = R.cleGemini; $("pModele").value = R.modele;
+  $("pQuestion").value = R.question;
+  effacer($("msgGh")); effacer($("msgDonnees"));
+  $("pageParams").hidden = false;
+};
+$("btnFermerParams").onclick = () => { $("pageParams").hidden = true; };
+$("btnInitQuestion").onclick = () => {
+  if(confirm("Remplacer la question par le texte par défaut ?")) $("pQuestion").value = QUESTION_DEFAUT;
+};
+$("btnEnrParams").onclick = async () => {
+  R.proprio = $("pProprio").value.trim(); R.depot = $("pDepot").value.trim();
+  R.branche = $("pBranche").value.trim() || "main"; R.token = $("pToken").value.trim();
+  R.cleGemini = $("pCle").value.trim(); R.modele = $("pModele").value;
+  R.question = $("pQuestion").value.trim() || QUESTION_DEFAUT;
+  sauverReglages();
+  $("pageParams").hidden = true;
+  await chargerDonnees(false);
+};
+$("btnTestGh").onclick = async () => {
+  const sauve = { p:R.proprio, d:R.depot, b:R.branche, t:R.token };
+  R.proprio = $("pProprio").value.trim(); R.depot = $("pDepot").value.trim();
+  R.branche = $("pBranche").value.trim() || "main"; R.token = $("pToken").value.trim();
+  message($("msgGh"), "Test en cours…", "info");
+  try{
+    const res = await fetch(`https://api.github.com/repos/${R.proprio}/${R.depot}`, { headers: enTetes() });
+    if(!res.ok) throw new Error("Réponse " + res.status);
+    const j = await res.json();
+    const txt = await ghLireTexte(FICHIER);
+    const n = txt ? (JSON.parse(txt).tickets || []).length : 0;
+    message($("msgGh"), `Dépôt ${j.full_name} accessible en ${j.permissions && j.permissions.push ? "écriture" : "lecture seule"}. ${txt ? n + " ticket(s) dans " + FICHIER + "." : FICHIER + " n'existe pas encore, il sera créé au premier enregistrement."}`, "ok");
+  }catch(e){
+    message($("msgGh"), "Accès impossible : " + e.message, "ko");
+    Object.assign(R, { proprio:sauve.p, depot:sauve.d, branche:sauve.b, token:sauve.t });
+  }
+};
+$("btnRecharger").onclick = async () => {
+  message($("msgDonnees"), "Lecture de " + FICHIER + "…", "info");
+  await chargerDonnees(false);
+  message($("msgDonnees"), donnees.tickets.length + " ticket(s) chargé(s).", "ok");
+};
+$("btnExport").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(donnees, null, 1)], { type:"application/json" }));
+  a.download = "prix-" + new Date().toISOString().slice(0, 10) + ".json";
+  a.click();
+};
+
+/* =========================================================
+   HISTORIQUE DES VERSIONS
+   ========================================================= */
+$("badgeVersion").textContent = VERSION;
+$("badgeVersion").onclick = () => {
+  $("listeVersions").innerHTML = HISTORIQUE_VERSIONS.map(h =>
+    `<div class="hist-v"><b>${h.v}</b> <span class="stat">${h.d}</span><p>${echapper(h.t)}</p></div>`).join("");
+  $("pageVersions").hidden = false;
+};
+$("btnFermerVersions").onclick = () => { $("pageVersions").hidden = true; };
+
+/* =========================================================
+   DÉMARRAGE
+   ========================================================= */
+window.addEventListener("beforeunload", e => {
+  if(ticketEnCours.photos.some(p => !p.chemin) || analyse){ e.preventDefault(); e.returnValue = ""; }
+});
+
+chargerReglages();
+$("chkPhotos").checked = R.afficherPhotos;
+$("chkUnique").checked = R.afficherUniques;
+dessinerVignettes();
+if(ghConfigure()) chargerDonnees(true);
+else message($("msgSaisie"), "Première utilisation : ouvre la roue dentée en haut à droite pour indiquer le dépôt GitHub, le token et la clé Gemini.", "info");
+</script>
 </body>
 </html>
