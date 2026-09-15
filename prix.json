@@ -1,6 +1,6 @@
 {
  "version": 1,
- "maj": "2026-09-14T11:31:03.284Z",
+ "maj": "2026-09-15T14:01:36.174Z",
  "tickets": [
   {
    "id": "mu15sno3745c",
@@ -164,6 +164,31 @@
    "commentaire": "Ouverture du magasin du lundi au samedi de 8h00 à 20h30, et le dimanche de 8h00 à 12h30. Paiement par CB sans contact. Nombre d'articles vendus : 20. Récapitulatif TVA : 5.50% (HT 48.75, TVA 2.68, TTC 51.43) et 20.00% (HT 14.70, TVA 2.94, TTC 17.64). Total TVA : HT 63.45, TVA 5.62, TTC 69.07. Carte de fidélité numéro 3250390283071145070, ancien et nouveau solde à 0.00. Offres fidélité valables jusqu'au 11 octobre 2026. Collecte de 7 vignettes Moulinex (1 vignette pour 10€ d'achat).",
    "avisPrix": "Les prix sont globalement normaux pour un supermarché Intermarché. Le poulet fermier (18.46 EUR) et les tomates rondes en grappe (6.99 EUR/kg) semblent un peu chers. Le Perrier 50cl à 1.30 EUR est également légèrement au-dessus de la moyenne.",
    "modifie": "2026-09-14T11:31:03.283Z"
+  },
+  {
+   "id": "mu2qox9axdgy",
+   "ajoute": "2026-09-15T14:01:36.174Z",
+   "photos": [
+    "photos/mu2qox9axdgy-mu2qox9azmzw.jpg"
+   ],
+   "magasin": "Castorama",
+   "adresse": "Antibes 6600 Antibes, 04.92.91.32.50, SIRET: 45167897300319",
+   "date": "2026-09-15",
+   "devise": "EUR",
+   "produits": [
+    {
+     "nom": "RUBSON JE JOINTE BLC 200ML",
+     "quantite": 1,
+     "prixUnitaire": 18.9,
+     "prixTotal": 18.9
+    }
+   ],
+   "totalIndique": 18.9,
+   "sommeLignes": 18.9,
+   "totalCoherent": true,
+   "commentaire": "Heure: 15:59. Moyen de paiement: Carte Bancaire. N° Carte Fidélité: 9130000200036810390. Nombre d'articles: 1. Détail TVA: V5 TVA 20,00% (3,15 EUR) pour un montant HT de 15,75 EUR.",
+   "avisPrix": "Le prix de 18,90 EUR pour un tube de 200ml de joint Rubson semble être un prix normal pour un produit de marque spécialisé dans le bricolage.",
+   "modifie": "2026-09-15T14:01:36.174Z"
   }
  ]
 }
