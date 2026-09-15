@@ -1,6 +1,6 @@
 {
  "version": 1,
- "maj": "2026-09-15T14:01:36.174Z",
+ "maj": "2026-09-15T15:29:33.751Z",
  "tickets": [
   {
    "id": "mu15sno3745c",
@@ -189,6 +189,67 @@
    "commentaire": "Heure: 15:59. Moyen de paiement: Carte Bancaire. N° Carte Fidélité: 9130000200036810390. Nombre d'articles: 1. Détail TVA: V5 TVA 20,00% (3,15 EUR) pour un montant HT de 15,75 EUR.",
    "avisPrix": "Le prix de 18,90 EUR pour un tube de 200ml de joint Rubson semble être un prix normal pour un produit de marque spécialisé dans le bricolage.",
    "modifie": "2026-09-15T14:01:36.174Z"
+  },
+  {
+   "id": "mu2tu5m0izx6",
+   "ajoute": "2026-09-15T15:29:33.750Z",
+   "photos": [
+    "photos/mu2tu5m0izx6-mu2tu5m063r7.jpg"
+   ],
+   "magasin": "Leroy Merlin",
+   "adresse": "",
+   "date": "2026-09-15",
+   "devise": "EUR",
+   "produits": [
+    {
+     "nom": "CUTTER 18MM RETRACTABLE DEXTER+ 3 LAMES",
+     "quantite": 1,
+     "prixUnitaire": 5.99,
+     "prixTotal": 5.99
+    },
+    {
+     "nom": "Dt Ecosart. unit. PMCB",
+     "quantite": 1,
+     "prixUnitaire": 0,
+     "prixTotal": 0
+    },
+    {
+     "nom": "1PX DETECTEUR FUMEE 1AN RM250 SMARTWARES",
+     "quantite": 1,
+     "prixUnitaire": 4.49,
+     "prixTotal": 4.49
+    },
+    {
+     "nom": "Dt Ecosart. unit. DEEE",
+     "quantite": 1,
+     "prixUnitaire": 0,
+     "prixTotal": 0
+    },
+    {
+     "nom": "CADRE MILO BLANC 21X29,7 CM INSPIRE",
+     "quantite": 1,
+     "prixUnitaire": 7.99,
+     "prixTotal": 7.99
+    },
+    {
+     "nom": "PROFIL L 15X15X1 ALU BRUT",
+     "quantite": 1,
+     "prixUnitaire": 3.99,
+     "prixTotal": 3.99
+    },
+    {
+     "nom": "Dt Ecosart. unit. PMCB",
+     "quantite": 1,
+     "prixUnitaire": 0,
+     "prixTotal": 0
+    }
+   ],
+   "totalIndique": 22.46,
+   "sommeLignes": 22.46,
+   "totalCoherent": true,
+   "commentaire": "Moyen de paiement: Carte bancaire. Informations fidélité: Ancien solde de points 10, Points de fidélité acquis 22, Nouveau solde de points 32, N° Fidélité 93010018792502937. TVA: Tva H 20.00% (3.75 EUR HT 18.71), Total TVA 3.75 EUR HT 18.71. Mentions: Retrouvez toutes vos informations fidélité sur votre espace \"mon compte\" sur www.leroymerlin.fr, Nos Conditions Générales de Vente sont disponibles sur : (coupé).",
+   "avisPrix": "Le cutter à 5.99 EUR et le profil en aluminium à 3.99 EUR semblent des prix normaux. Le détecteur de fumée à 4.49 EUR est un prix très avantageux. Le cadre à 7.99 EUR est un prix standard.",
+   "modifie": "2026-09-15T15:29:33.751Z"
   }
  ]
 }
