@@ -270,7 +270,7 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-width:0}
   <section class="bloc">
     <h2>Dépôt GitHub</h2>
     <label for="pProprio">Propriétaire</label><input id="pProprio" placeholder="hammerinhank">
-    <label for="pDepot">Dépôt</label><input id="pDepot" placeholder="prix">
+    <label for="pDepot">Dépôt</label><input id="pDepot" placeholder="prix-privatedata">
     <label for="pBranche">Branche</label><input id="pBranche" placeholder="main">
     <label for="pToken">Token GitHub</label><input id="pToken" type="password" placeholder="github_pat_…">
     <p class="aide">Le token reste dans le stockage local de cet appareil. Il n'est jamais écrit dans les fichiers publiés.</p>
@@ -352,8 +352,9 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-width:0}
 /* =========================================================
    VERSION
    ========================================================= */
-const VERSION = "V1.4.0";
+const VERSION = "V1.4.1";
 const HISTORIQUE_VERSIONS = [
+  { v:"V1.4.1", d:"22/09/2026", t:"Les données vivent désormais dans le dépôt privé prix-privatedata, qui devient le dépôt par défaut. Un appareil encore réglé sur l'ancien dépôt « prix » (qui ne contient plus que l'application) bascule automatiquement vers prix-privatedata : il ne peut plus afficher un historique vide ni recréer par erreur des données dans le dépôt public." },
   { v:"V1.4.0", d:"22/09/2026", t:"Nouvelle section « Déplacer les données » dans les réglages : copie de prix.json et de toutes les photos vers un autre dépôt (par exemple un dépôt privé), avec décompte de progression et vérification que chaque copie est identique à l'original, puis bascule. À la bascule, l'ancien prix.json est remplacé par un renvoi vers le nouveau dépôt : chaque appareil qui le lit bascule de lui-même. Sans token, un dépôt privé n'est plus pris pour un dépôt vide : l'app demande le token." },
   { v:"V1.3.0", d:"22/09/2026", t:"L'historique des tickets et leurs photos se lisent sur GitHub sans token (dépôt hammerinhank/prix, toujours modifiable) ; le token ne sert plus qu'à enregistrer. Un champ laissé vide reprend le dépôt par défaut. Sans token, l'app indique « Lecture seule » et l'enregistrement explique qu'il en faut un." },
   { v:"V1.2.0", d:"14/09/2026", t:"Les photos partent automatiquement dans le dépôt dès qu'elles sont prises : l'écran de saisie ne montre plus que « Prendre une photo » et « Analyser ». Chaque vignette affiche son état (⏳ en cours, ☁︎ envoyée, ⚠︎ échec) et un bouton « Réessayer l'envoi » n'apparaît qu'en cas de problème de réseau ou de réglages." },
@@ -392,7 +393,7 @@ Règles :
 - N'invente jamais une valeur illisible : laisse la chaîne vide ou le nombre à 0.`;
 
 const REG_DEFAUT = {
-  proprio:"hammerinhank", depot:"prix", branche:"main", token:"",
+  proprio:"hammerinhank", depot:"prix-privatedata", branche:"main", token:"",
   cleGemini:"", modele:"gemini-2.5-flash", question:QUESTION_DEFAUT,
   afficherPhotos:false, afficherUniques:false
 };
@@ -404,6 +405,8 @@ function chargerReglages(){
   // Un champ laissé vide reprend le dépôt par défaut : l'historique reste toujours lisible.
   if(!R.proprio) R.proprio = REG_DEFAUT.proprio;
   if(!R.depot) R.depot = REG_DEFAUT.depot;
+  // V1.4.1 : « prix » ne sert plus que l'application ; ses données sont dans prix-privatedata.
+  if(R.depot.toLowerCase() === "prix"){ R.depot = REG_DEFAUT.depot; sauverReglages(); }
   if(!R.branche) R.branche = REG_DEFAUT.branche;
   if(!R.question) R.question = QUESTION_DEFAUT;
 }
