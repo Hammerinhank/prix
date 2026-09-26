@@ -155,6 +155,22 @@ details[open] summary::before{transform:rotate(90deg)}
 .aide-btn{font-size:12px;color:var(--doux);margin:6px 0 0;line-height:1.35}
 .papier .aide-btn{color:#6a6256}
 
+/* ---------- journal ---------- */
+.jl{border:1px solid var(--bord);border-radius:10px;background:var(--surface2);margin-bottom:8px}
+.jl > .tete{display:flex;gap:8px;align-items:baseline;padding:9px 11px;cursor:pointer;font-size:13px}
+.jl .quand{font-family:var(--mono);font-size:11px;color:var(--doux);white-space:nowrap}
+.jl .titre{flex:1}
+.jl .etat{font-size:14px}
+.jl.ko{border-color:var(--rouge)}
+.jl.alerte{border-color:var(--ambre)}
+.jl .corps{display:none;padding:0 11px 11px;font-size:12px}
+.jl.ouvert .corps{display:block}
+.jl dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:0 0 8px}
+.jl dt{color:var(--doux)}
+.jl dd{margin:0;font-family:var(--mono);word-break:break-word}
+.jl pre{background:#0c0f14;border:1px solid var(--bord);border-radius:8px;padding:8px;max-height:320px;overflow:auto;white-space:pre-wrap;word-break:break-word;font-size:11px;margin:4px 0 0}
+.jl .sous{color:var(--doux);margin-top:8px}
+
 /* ---------- paire date / devise ---------- */
 .duo{display:grid;grid-template-columns:1fr 96px;gap:8px;align-items:end}
 .duo > *{min-width:0}
@@ -197,6 +213,10 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-width:0}
   <div style="margin-top:12px">
     <button class="btn vert" id="btnAnalyser">🤖 Analyser avec Gemini</button>
     <p class="aide-btn">Envoie toutes les photos de ce ticket à Gemini, qui en extrait le magasin, la date et le détail des produits. La fiche obtenue reste modifiable avant enregistrement.</p>
+  </div>
+  <div id="zoneAbandon" style="margin-top:12px" hidden>
+    <button class="btn petit" id="btnAbandon">🗑 Abandonner ce ticket</button>
+    <p class="aide-btn">Le ticket en cours est conservé sur cet appareil même si tu fermes l'app. Ce bouton l'efface pour repartir de zéro (les photos déjà envoyées restent dans le dépôt).</p>
   </div>
   <div class="msg" id="msgSaisie"></div>
   <input type="file" id="fichierPhoto" accept="image/*" capture="environment" hidden>
@@ -257,6 +277,20 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-width:0}
     <input id="rechProduit" placeholder="Rechercher un produit">
     <label class="option" style="margin-top:10px"><input type="checkbox" id="chkUnique"> Afficher aussi les produits achetés une seule fois</label>
     <div id="listeProduits"></div>
+  </div>
+</details>
+
+<!-- ====================== JOURNAL ====================== -->
+<details id="detJournal">
+  <summary>🪵 Journal (<span id="nbJournal">0</span>)</summary>
+  <div class="contenu">
+    <p class="aide-btn" style="margin-top:0">Trace de chaque analyse Gemini (réglages utilisés, durée, code de retour, motif d'arrêt, consommation de jetons, réponse brute complète) et de chaque message d'erreur affiché. Conservé sur cet appareil uniquement (50 dernières entrées). Touche une entrée pour la déplier.</p>
+    <div class="actions" style="margin:8px 0 12px">
+      <button class="btn petit" id="btnCopierJournal">📋 Copier le journal</button>
+      <button class="btn petit" id="btnViderJournal">🗑 Vider</button>
+    </div>
+    <p class="aide-btn" style="margin-top:-6px;margin-bottom:10px">Copier : place tout le journal dans le presse-papiers, pour le coller dans un message si tu veux le faire examiner.</p>
+    <div id="listeJournal"></div>
   </div>
 </details>
 
@@ -352,8 +386,10 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-width:0}
 /* =========================================================
    VERSION
    ========================================================= */
-const VERSION = "V1.4.1";
+const VERSION = "V1.6.0";
 const HISTORIQUE_VERSIONS = [
+  { v:"V1.6.0", d:"26/09/2026", t:"Plus aucune photo perdue : le ticket en cours (photos, y compris celles pas encore envoyées, et fiche d'analyse non enregistrée) est gardé en permanence sur l'appareil et restauré à la réouverture de l'app, avec relance automatique des envois en échec. Nouveau bouton « Abandonner ce ticket ». Modifier un ancien ticket ne peut plus écraser un ticket en cours, et annuler une modification ne mélange plus ses photos avec le ticket suivant." },
+  { v:"V1.5.0", d:"26/09/2026", t:"Nouveau journal (section 🪵 en bas de page) : chaque analyse Gemini y est tracée avec la réponse brute complète, le motif d'arrêt et les jetons consommés, ainsi que tous les messages d'erreur. Messages d'erreur de l'analyse précisant la nature du problème et quoi faire (clé refusée, quota, modèle introuvable, surcharge, réseau, blocage, réponse coupée…). Correction de la cause la plus fréquente de « réponse illisible » : la réponse était coupée faute de place (la réflexion de Gemini 2.5 consommait la limite de jetons) ; limite relevée, réflexion plafonnée, et une réponse coupée est réparée pour récupérer les produits déjà lus, avec avertissement." },
   { v:"V1.4.1", d:"22/09/2026", t:"Les données vivent désormais dans le dépôt privé prix-privatedata, qui devient le dépôt par défaut. Un appareil encore réglé sur l'ancien dépôt « prix » (qui ne contient plus que l'application) bascule automatiquement vers prix-privatedata : il ne peut plus afficher un historique vide ni recréer par erreur des données dans le dépôt public." },
   { v:"V1.4.0", d:"22/09/2026", t:"Nouvelle section « Déplacer les données » dans les réglages : copie de prix.json et de toutes les photos vers un autre dépôt (par exemple un dépôt privé), avec décompte de progression et vérification que chaque copie est identique à l'original, puis bascule. À la bascule, l'ancien prix.json est remplacé par un renvoi vers le nouveau dépôt : chaque appareil qui le lit bascule de lui-même. Sans token, un dépôt privé n'est plus pris pour un dépôt vide : l'app demande le token." },
   { v:"V1.3.0", d:"22/09/2026", t:"L'historique des tickets et leurs photos se lisent sur GitHub sans token (dépôt hammerinhank/prix, toujours modifiable) ; le token ne sert plus qu'à enregistrer. Un champ laissé vide reprend le dépôt par défaut. Sans token, l'app indique « Lecture seule » et l'enregistrement explique qu'il en faut un." },
@@ -428,6 +464,7 @@ const $ = id => document.getElementById(id);
 function message(el, texte, type){
   el.textContent = texte;
   el.className = "msg on " + (type||"info");
+  if(type === "ko" && !message.silence) journaliser({ type:"erreur", titre:texte.split("\n")[0].slice(0, 90), ok:false, details:{ "Zone":el.id }, texte });
 }
 function effacer(el){ el.className = "msg"; el.textContent = ""; }
 function nombre(x){ const n = parseFloat(String(x).replace(",", ".")); return isFinite(n) ? n : 0; }
@@ -811,10 +848,129 @@ function etatBadge(p){
   return "";
 }
 
+/* =========================================================
+   BROUILLON : ticket en cours conservé sur l'appareil (IndexedDB,
+   repli sur localStorage) pour survivre à la fermeture de l'app.
+   ========================================================= */
+const BR_BASE = "prix", BR_TABLE = "brouillon", BR_CLE = "courant", BR_LS = "prix.brouillon";
+function brOuvrir(){
+  return new Promise((ok, ko) => {
+    if(!window.indexedDB) return ko(new Error("IndexedDB indisponible"));
+    const r = indexedDB.open(BR_BASE, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(BR_TABLE);
+    r.onsuccess = () => ok(r.result);
+    r.onerror = () => ko(r.error || new Error("ouverture IndexedDB impossible"));
+  });
+}
+async function brOperation(mode, action){
+  const db = await brOuvrir();
+  return new Promise((ok, ko) => {
+    const tx = db.transaction(BR_TABLE, mode);
+    const req = action(tx.objectStore(BR_TABLE));
+    tx.oncomplete = () => { db.close(); ok(req && req.result); };
+    tx.onerror = tx.onabort = () => { db.close(); ko(tx.error || new Error("transaction IndexedDB échouée")); };
+  });
+}
+function brContenu(){
+  const photos = ticketEnCours.photos;
+  if(!photos.length && !analyse) return null;
+  return {
+    quand: new Date().toISOString(),
+    debut: ticketEnCours.debut || new Date().toISOString(),
+    ticketEdite,
+    ticket: { id: ticketEnCours.id, photos: photos.map(p => ({ id:p.id, dataUrl:p.dataUrl, chemin:p.chemin, etat:p.etat, erreur:p.erreur || null })) },
+    analyse
+  };
+}
+let brMinuteur = null, brAlerte = false, brRelance = false;
+function sauverBrouillon(){
+  clearTimeout(brMinuteur);
+  brMinuteur = setTimeout(ecrireBrouillon, 300);
+}
+async function ecrireBrouillon(){
+  const c = brContenu();
+  try{
+    await brOperation("readwrite", st => c ? st.put(c, BR_CLE) : st.delete(BR_CLE));
+    try{ localStorage.removeItem(BR_LS); }catch(e){}
+  }catch(e){
+    try{
+      if(c) localStorage.setItem(BR_LS, JSON.stringify(c)); else localStorage.removeItem(BR_LS);
+    }catch(e2){
+      if(!brAlerte){
+        brAlerte = true;
+        message($("msgSaisie"), "Impossible de garder le ticket en cours sur cet appareil (stockage indisponible ou plein : " + e2.message + ").\nQue faire : ne ferme pas l'app avant d'avoir analysé et enregistré ce ticket.", "ko");
+      }
+    }
+  }
+}
+async function lireBrouillon(){
+  try{ const c = await brOperation("readonly", st => st.get(BR_CLE)); if(c) return c; }catch(e){}
+  try{ return JSON.parse(localStorage.getItem(BR_LS) || "null"); }catch(e){ return null; }
+}
+function effacerBrouillon(){
+  clearTimeout(brMinuteur);
+  ticketEnCours = { id:null, photos:[] };
+  ecrireBrouillon();
+}
+
+async function restaurerBrouillon(){
+  const c = await lireBrouillon();
+  if(!c || !c.ticket) return;
+  ticketEnCours = {
+    id: c.ticket.id, debut: c.debut,
+    photos: (c.ticket.photos || []).map(p => ({
+      id:p.id, dataUrl:p.dataUrl || "", base64:(p.dataUrl || "").split(",")[1] || "",
+      chemin:p.chemin || null, etat: p.chemin ? "ok" : (p.etat === "echec" ? "echec" : "attente"), erreur:p.erreur
+    }))
+  };
+  ticketEdite = c.ticketEdite || null;
+  dessinerVignettes();
+  majZoneStocker();
+  const n = ticketEnCours.photos.length;
+  const nonEnvoyees = ticketEnCours.photos.filter(p => !p.chemin);
+  const quand = c.debut ? heureLisible(c.debut) : "?";
+  let texte;
+  if(c.analyse){
+    ouvrirFiche(c.analyse);
+    texte = ticketEdite
+      ? "📥 Modification d'un ticket retrouvée (commencée le " + quand + ", non enregistrée).\nQue faire : vérifie la fiche ci-dessous puis enregistre-la, ou touche « Annuler »."
+      : "📥 Ticket en cours retrouvé : " + n + " photo(s) du " + quand + ", déjà analysé(es) mais pas encore enregistré(es).\nQue faire : vérifie la fiche ci-dessous puis enregistre-la.";
+  }else{
+    texte = "📥 Ticket en cours retrouvé : " + n + " photo(s) du " + quand + ", pas encore analysée(s).\nQue faire : touche « Analyser avec Gemini », ou « Abandonner ce ticket » s'il ne sert plus.";
+  }
+  if(nonEnvoyees.length) texte += "\n" + nonEnvoyees.length + " photo(s) n'étaient pas encore dans le dépôt : nouvel envoi lancé.";
+  message($("msgSaisie"), texte, "info");
+  journaliser({ type:"info", titre:"Ticket en cours restauré (" + n + " photo(s))", ok:true,
+    details:{ "Commencé":quand, "Photos non envoyées":nonEnvoyees.length, "Fiche d'analyse":c.analyse ? "oui" : "non", "Modification d'un ticket existant":ticketEdite ? "oui" : "non" } });
+  // relance des envois, l'un après l'autre, sans écraser le message de restauration
+  if(!nonEnvoyees.length) return;
+  brRelance = true;
+  for(const p of nonEnvoyees) await envoyerPhoto(p);
+  brRelance = false;
+  const rates = nonEnvoyees.filter(p => !p.chemin);
+  if(rates.length)
+    message($("msgSaisie"), texte + "\n\n⚠︎ Envoi toujours impossible pour " + rates.length + " photo(s) : " + (rates[0].erreur || "réseau indisponible") +
+      ".\nPas d'inquiétude, elles restent gardées sur cet appareil. Que faire : touche « Réessayer l'envoi » quand tu auras du réseau ; l'analyse, elle, reste possible.", "ko");
+  else
+    message($("msgSaisie"), texte.replace(/\n\d+ photo\(s\) n'étaient.*$/, "") + "\nToutes les photos sont maintenant dans le dépôt.", "info");
+}
+
+$("btnAbandon").onclick = () => {
+  const n = ticketEnCours.photos.length;
+  if(!confirm("Abandonner ce ticket (" + n + " photo(s)) ?\nLes photos non envoyées seront définitivement perdues ; celles déjà envoyées restent dans le dépôt.")) return;
+  analyse = null; ticketEdite = null;
+  $("fiche").hidden = true;
+  effacerBrouillon();
+  dessinerVignettes(); majZoneStocker();
+  effacer($("msgSaisie"));
+  $("btnAnalyser").classList.remove("erreur");
+};
+
 function dessinerVignettes(){
   const z = $("vignettes");
   z.innerHTML = "";
   $("aucunePhoto").hidden = ticketEnCours.photos.length > 0;
+  $("zoneAbandon").hidden = !ticketEnCours.photos.length || !!ticketEdite;
   ticketEnCours.photos.forEach((p, i) => {
     const d = document.createElement("div");
     d.className = "vignette " + etatClasse(p);
@@ -827,6 +983,7 @@ function dessinerVignettes(){
       ticketEnCours.photos.splice(i, 1);
       dessinerVignettes();
       majZoneStocker();
+      sauverBrouillon();
     };
     z.appendChild(d);
   });
@@ -839,9 +996,10 @@ $("fichierPhoto").onchange = async e => {
   if(!f) return;
   try{
     const dataUrl = await compresser(f, 1600);
-    if(!ticketEnCours.id) ticketEnCours.id = idCourt();
+    if(!ticketEnCours.id){ ticketEnCours.id = idCourt(); ticketEnCours.debut = new Date().toISOString(); }
     const p = { id: idCourt(), dataUrl, base64: dataUrl.split(",")[1], chemin:null, etat:"attente" };
     ticketEnCours.photos.push(p);
+    await ecrireBrouillon();              // la photo est à l'abri avant même d'être envoyée
     dessinerVignettes();
     $("btnAnalyser").classList.remove("erreur");
     envoyerPhoto(p);                       // envoi immédiat, en arrière-plan
@@ -873,6 +1031,7 @@ async function envoyerPhoto(p){
     return false;
   }finally{
     dessinerVignettes(); majZoneStocker();
+    sauverBrouillon();
   }
 }
 
@@ -880,7 +1039,7 @@ async function envoyerPhoto(p){
 function majZoneStocker(){
   const rates = ticketEnCours.photos.filter(p => !p.chemin && p.etat === "echec");
   $("zoneStocker").hidden = rates.length === 0;
-  if(rates.length){
+  if(rates.length && !brRelance){
     $("btnStocker").textContent = "🔁 Réessayer l'envoi de " + rates.length + " photo(s)";
     message($("msgSaisie"), "Envoi impossible pour " + rates.length + " photo(s) : " + (rates[0].erreur || "réseau indisponible") +
       "\nL'analyse reste possible ; réessaie l'envoi avant d'enregistrer le ticket.", "ko");
@@ -917,32 +1076,271 @@ $("btnStocker").onclick = async () => {
 };
 
 /* =========================================================
+   JOURNAL (localStorage, 50 dernières entrées)
+   ========================================================= */
+const CLE_JOURNAL = "prix.journal";
+const JOURNAL_MAX = 50;
+let journal = [];
+try{ journal = JSON.parse(localStorage.getItem(CLE_JOURNAL) || "[]"); }catch(e){ journal = []; }
+
+function sauverJournal(){
+  // Si le stockage est plein, on retire les plus anciennes entrées jusqu'à ce que ça passe.
+  for(let essai = 0; essai < 10; essai++){
+    try{ localStorage.setItem(CLE_JOURNAL, JSON.stringify(journal)); return; }
+    catch(e){ if(journal.length <= 1) return; journal.splice(Math.ceil(journal.length / 2)); }
+  }
+}
+function journaliser(e){
+  e.quand = new Date().toISOString();
+  e.version = VERSION;
+  journal.unshift(e);
+  if(journal.length > JOURNAL_MAX) journal.length = JOURNAL_MAX;
+  sauverJournal();
+  dessinerJournal();
+  return e;
+}
+function heureLisible(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString("fr-FR") + " " + d.toLocaleTimeString("fr-FR");
+}
+function dessinerJournal(){
+  $("nbJournal").textContent = journal.length;
+  const zone = $("listeJournal");
+  if(!journal.length){ zone.innerHTML = '<div class="vide">Journal vide.</div>'; return; }
+  zone.innerHTML = journal.map((e, i) => {
+    const cls = e.ok === false ? "ko" : (e.alerte ? "alerte" : "");
+    const icone = e.ok === false ? "❌" : (e.alerte ? "⚠️" : "✅");
+    const dl = Object.entries(e.details || {}).filter(([k, v]) => v !== undefined && v !== null && v !== "")
+      .map(([k, v]) => `<dt>${echapper(k)}</dt><dd>${echapper(typeof v === "object" ? JSON.stringify(v) : v)}</dd>`).join("");
+    return `<div class="jl ${cls}" data-i="${i}">
+      <div class="tete"><span class="etat">${icone}</span><span class="titre">${e.type === "gemini" ? "🤖 " : ""}${echapper(e.titre || "")}</span><span class="quand">${echapper(heureLisible(e.quand))}</span></div>
+      <div class="corps">
+        ${dl ? `<dl>${dl}</dl>` : ""}
+        ${e.texte ? `<div class="sous">Message affiché</div><pre>${echapper(e.texte)}</pre>` : ""}
+        ${e.brut !== undefined ? `<div class="sous">Réponse brute de Gemini (${(e.brut || "").length} caractères)</div><pre>${echapper(e.brut || "(vide)")}</pre>` : ""}
+        ${e.pensees ? `<div class="sous">Réflexion résumée par Gemini</div><pre>${echapper(e.pensees)}</pre>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+  zone.querySelectorAll(".jl > .tete").forEach(t => t.onclick = () => t.parentNode.classList.toggle("ouvert"));
+}
+$("btnViderJournal").onclick = () => {
+  if(!journal.length || !confirm("Vider le journal de cet appareil ?")) return;
+  journal = []; sauverJournal(); dessinerJournal();
+};
+$("btnCopierJournal").onclick = async () => {
+  const txt = JSON.stringify(journal, null, 1);
+  try{ await navigator.clipboard.writeText(txt); $("btnCopierJournal").textContent = "✓ Copié"; }
+  catch(e){ $("btnCopierJournal").textContent = "Copie refusée par le navigateur"; }
+  setTimeout(() => { $("btnCopierJournal").textContent = "📋 Copier le journal"; }, 2000);
+};
+function ouvrirJournal(){ $("detJournal").open = true; }
+
+/* =========================================================
    GEMINI
    ========================================================= */
+class ErreurGemini extends Error{
+  constructor(nature, remede, details){
+    super(nature + (remede ? "\n\nQue faire : " + remede : ""));
+    this.nature = nature; this.remede = remede; this.details = details || {};
+  }
+}
+
+/* Limites d'une réponse selon le modèle : les modèles 2.5 « réfléchissent » avant de répondre,
+   et cette réflexion est décomptée de maxOutputTokens. On plafonne donc la réflexion
+   et on laisse largement la place au JSON (un long ticket peut dépasser 8 000 jetons). */
+function configGeneration(modele){
+  const cfg = { temperature:0.2, responseMimeType:"application/json" };
+  if(/2\.5|^gemini-3/.test(modele)){
+    cfg.maxOutputTokens = 32768;
+    cfg.thinkingConfig = { thinkingBudget: /pro/.test(modele) ? 4096 : 2048 };
+  }else{
+    cfg.maxOutputTokens = 8192;
+  }
+  return cfg;
+}
+
+const MOTIFS_ARRET = {
+  STOP: null,
+  MAX_TOKENS: ["La réponse de Gemini a été coupée avant la fin : elle a atteint la limite de longueur autorisée (ticket très long, ou réflexion du modèle trop gourmande).",
+               "relance l'analyse ; si ça se reproduit, photographie le ticket en plusieurs morceaux et analyse-les séparément, ou choisis gemini-2.5-pro dans les réglages."],
+  SAFETY: ["Gemini a interrompu sa réponse pour raison de sécurité (filtre de contenu).", "vérifie que les photos ne montrent que le ticket (pas de visage, de document d'identité…) puis relance."],
+  RECITATION: ["Gemini a interrompu sa réponse car elle ressemblait trop à un texte protégé.", "relance simplement l'analyse ; c'est en général ponctuel."],
+  BLOCKLIST: ["Gemini a interrompu sa réponse (terme bloqué).", "relance l'analyse, éventuellement avec une photo recadrée."],
+  PROHIBITED_CONTENT: ["Gemini a refusé de traiter ces photos (contenu interdit détecté).", "reprends la photo en ne cadrant que le ticket."],
+  SPII: ["Gemini a interrompu sa réponse car elle contenait des données personnelles sensibles (numéro de carte, etc.).", "recadre la photo pour masquer le bas du ticket de carte bancaire, puis relance."],
+  MALFORMED_FUNCTION_CALL: ["Gemini a produit une réponse mal formée.", "relance l'analyse."],
+  OTHER: ["Gemini s'est arrêté pour une raison non précisée.", "relance l'analyse ; si ça persiste, essaie un autre modèle dans les réglages."]
+};
+
+/* Tente de réparer un JSON coupé : on remonte jusqu'à un objet complet et on referme les crochets. */
+function fermetures(txt){
+  const pile = []; let chaine = false, echap = false;
+  for(const c of txt){
+    if(chaine){ if(echap) echap = false; else if(c === "\\") echap = true; else if(c === '"') chaine = false; continue; }
+    if(c === '"') chaine = true;
+    else if(c === "{" || c === "[") pile.push(c);
+    else if(c === "}" || c === "]") pile.pop();
+  }
+  if(chaine) return null;
+  return pile.reverse().map(c => c === "{" ? "}" : "]").join("");
+}
+function reparerJson(txt){
+  let pos = txt.length, essais = 0;
+  while(essais++ < 400){
+    pos = txt.lastIndexOf("}", pos - 1);
+    if(pos < 0) return null;
+    const debut = txt.slice(0, pos + 1).replace(/,\s*$/, "");
+    const fin = fermetures(debut);
+    if(fin === null) continue;
+    try{ return JSON.parse(debut + fin); }catch(e){}
+  }
+  return null;
+}
+function extraireJson(txt){
+  const a = txt.indexOf("{"), b = txt.lastIndexOf("}");
+  if(a < 0 || b <= a) return null;
+  try{ return JSON.parse(txt.slice(a, b + 1)); }catch(e){ return null; }
+}
+
+function erreurHttp(statut, detail, modele){
+  const d = detail || "";
+  if(statut === 400 && /API key|API_KEY/i.test(d))
+    return ["La clé API Gemini est refusée (invalide ou mal copiée).", "ouvre les réglages (roue dentée) et recolle la clé depuis Google AI Studio, sans espace avant ou après."];
+  if(statut === 400)
+    return ["Gemini a jugé la requête invalide (" + (d || "code 400") + ").", "si le message parle d'image, reprends la photo ; s'il parle d'un paramètre, choisis un autre modèle dans les réglages."];
+  if(statut === 401 || statut === 403)
+    return ["Accès refusé par Gemini avec cette clé (" + statut + ").", "vérifie dans Google AI Studio que la clé est active et que l'API Gemini est autorisée pour son projet, puis recolle-la dans les réglages."];
+  if(statut === 404)
+    return ["Le modèle « " + modele + " » n'existe pas ou plus chez Google.", "choisis un autre modèle dans les réglages (gemini-2.5-flash conseillé)."];
+  if(statut === 429)
+    return ["Quota Gemini dépassé : trop de requêtes, ou limite gratuite du jour atteinte.", "attends une minute et relance ; si ça persiste, le quota quotidien est épuisé (il repart le lendemain) ou passe temporairement à un autre modèle."];
+  if(statut === 500)
+    return ["Erreur interne chez Google (500).", "relance dans quelques instants ; si ça persiste avec plusieurs photos, essaie avec moins de photos."];
+  if(statut === 503 || statut === 502)
+    return ["Gemini est momentanément surchargé (" + statut + ").", "patiente une minute puis relance, ou choisis un autre modèle dans les réglages."];
+  if(statut === 504)
+    return ["Gemini a mis trop de temps à répondre (504).", "relance ; si le ticket a beaucoup de photos, essaie avec moins de photos à la fois."];
+  return ["Gemini a répondu par une erreur " + statut + (d ? " — " + d : "") + ".", "relance ; si ça persiste, consulte le journal en bas de page."];
+}
+
 async function interrogerGemini(photosBase64){
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(R.modele)}:generateContent?key=${encodeURIComponent(R.cleGemini)}`;
+  const modele = R.modele;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modele)}:generateContent?key=${encodeURIComponent(R.cleGemini)}`;
   const parts = [{ text: R.question }];
   photosBase64.forEach(b => parts.push({ inline_data:{ mime_type:"image/jpeg", data:b } }));
-  const res = await fetch(url, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      contents:[{ role:"user", parts }],
-      generationConfig:{ temperature:0.2, maxOutputTokens:8192, responseMimeType:"application/json" }
-    })
-  });
+  const generationConfig = configGeneration(modele);
+  const tailleKo = Math.round(photosBase64.reduce((t, b) => t + b.length * 0.75, 0) / 1024);
+  const depart = Date.now();
+
+  // Entrée de journal complétée au fil de l'eau, enregistrée à la fin quoi qu'il arrive.
+  const trace = { type:"gemini", titre:"", ok:true, details:{
+    "Modèle":modele, "Photos":photosBase64.length + " (" + tailleKo + " Ko)",
+    "Limite de sortie":generationConfig.maxOutputTokens + " jetons" + (generationConfig.thinkingConfig ? ", réflexion ≤ " + generationConfig.thinkingConfig.thinkingBudget : "")
+  }};
+  const finir = (titre, ok, alerte) => {
+    trace.titre = titre; trace.ok = ok; if(alerte) trace.alerte = true;
+    trace.details["Durée"] = ((Date.now() - depart) / 1000).toFixed(1) + " s";
+    journaliser(trace);
+  };
+  const echec = (nature, remede, titre) => {
+    const err = new ErreurGemini(nature, remede);
+    trace.texte = err.message;
+    finir(titre || "Analyse en échec", false);
+    return err;
+  };
+
+  let res;
+  try{
+    res = await fetch(url, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ contents:[{ role:"user", parts }], generationConfig })
+    });
+  }catch(e){
+    trace.details["Erreur réseau"] = e.message;
+    throw echec("Impossible de joindre Gemini : la connexion a échoué (" + e.message + ").",
+      "vérifie que tu as du réseau (4G ou Wi-Fi), puis relance. Les photos restent en place.", "Réseau indisponible");
+  }
+  trace.details["Code HTTP"] = res.status;
+  const brut = await res.text();
+
   if(!res.ok){
     let d = "";
-    try{ d = (await res.json()).error.message; }catch(e){}
-    throw new Error("Gemini a refusé la requête (" + res.status + ")" + (d ? " — " + d : ""));
+    try{ d = JSON.parse(brut).error.message; }catch(e){}
+    trace.brut = brut;
+    const [nature, remede] = erreurHttp(res.status, d, modele);
+    throw echec(nature, remede, "Erreur HTTP " + res.status);
   }
-  const j = await res.json();
+
+  let j;
+  try{ j = JSON.parse(brut); }
+  catch(e){
+    trace.brut = brut;
+    throw echec("La réponse du serveur Gemini est incompréhensible (ce n'est pas du JSON).", "relance l'analyse ; si ça persiste, copie le journal et transmets-le.");
+  }
+
+  const u = j.usageMetadata || {};
+  trace.details["Jetons envoyés"] = u.promptTokenCount;
+  trace.details["Jetons de réflexion"] = u.thoughtsTokenCount;
+  trace.details["Jetons de réponse"] = u.candidatesTokenCount;
+
+  if(j.promptFeedback && j.promptFeedback.blockReason){
+    trace.details["Blocage"] = j.promptFeedback.blockReason;
+    trace.brut = brut;
+    throw echec("Gemini a refusé d'examiner les photos (motif : " + j.promptFeedback.blockReason + ").",
+      "reprends la photo en ne cadrant que le ticket, puis relance.", "Requête bloquée");
+  }
+
   const cand = j.candidates && j.candidates[0];
-  if(!cand) throw new Error("Gemini n'a renvoyé aucune réponse exploitable.");
-  let txt = (cand.content && cand.content.parts || []).map(p => p.text || "").join("").trim();
+  if(!cand){
+    trace.brut = brut;
+    throw echec("Gemini n'a renvoyé aucune réponse.", "relance l'analyse ; si ça persiste, essaie un autre modèle dans les réglages.", "Réponse vide");
+  }
+  const motif = cand.finishReason || "?";
+  trace.details["Motif d'arrêt"] = motif;
+
+  const toutes = (cand.content && cand.content.parts) || [];
+  trace.pensees = toutes.filter(p => p.thought).map(p => p.text || "").join("\n").trim() || undefined;
+  let txt = toutes.filter(p => !p.thought).map(p => p.text || "").join("").trim();
+  trace.brut = txt;
   txt = txt.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-  try{ return JSON.parse(txt); }
-  catch(e){ throw new Error("Réponse de Gemini illisible (JSON attendu) :\n" + txt.slice(0, 300)); }
+
+  const [natureArret, remedeArret] = MOTIFS_ARRET[motif] || MOTIFS_ARRET.OTHER;
+
+  if(!txt){
+    if(motif === "MAX_TOKENS")
+      throw echec("Gemini a épuisé toute sa limite de longueur à réfléchir, sans écrire de réponse.", "relance l'analyse ; si ça se reproduit, choisis un autre modèle dans les réglages.", "Réponse vide (MAX_TOKENS)");
+    throw echec(natureArret || "Gemini a renvoyé une réponse vide.", remedeArret || "relance l'analyse.", "Réponse vide (" + motif + ")");
+  }
+
+  // 1) cas normal
+  try{ const obj = JSON.parse(txt); finir(resumeTicket(obj), true); return obj; }catch(e){ trace.details["Erreur de lecture"] = e.message; }
+
+  // 2) du texte autour du JSON
+  const extrait = extraireJson(txt);
+  if(extrait){ finir(resumeTicket(extrait) + " (texte parasite retiré)", true, true); return extrait; }
+
+  // 3) JSON coupé : on récupère ce qui est complet
+  const repare = reparerJson(txt);
+  if(repare && (repare.magasin || (repare.produits || []).length)){
+    const cause = motif === "MAX_TOKENS" ? "la réponse a été coupée faute de place" : "la réponse s'est arrêtée avant la fin (motif : " + motif + ")";
+    repare.__alerte = "⚠️ Réponse incomplète : " + cause + ". " + (repare.produits || []).length +
+      " produit(s) récupéré(s) ; les dernières lignes du ticket et le total peuvent manquer.\nQue faire : compare avec le ticket et complète la fiche, ou relance l'analyse.";
+    trace.texte = repare.__alerte;
+    finir(resumeTicket(repare) + " — réponse coupée, réparée", true, true);
+    return repare;
+  }
+
+  // 4) échec définitif : explication selon le motif d'arrêt
+  if(natureArret)
+    throw echec(natureArret + "\nLa partie reçue n'a pas pu être exploitée.", remedeArret, "Réponse coupée (" + motif + ")");
+  throw echec("Gemini a répondu, mais pas au format JSON attendu (" + trace.details["Erreur de lecture"] + ").",
+    "relance l'analyse. Si tu as modifié la question dans les réglages, touche « ↺ Revenir au texte par défaut ». La réponse complète est dans le journal.", "Réponse non JSON");
+}
+function resumeTicket(o){
+  if(o && o.estTicket === false) return "Pas un ticket de caisse";
+  return ((o && o.magasin) || "Magasin inconnu") + " — " + (((o && o.produits) || []).length) + " produit(s)";
 }
 
 $("btnAnalyser").onclick = async () => {
@@ -962,10 +1360,17 @@ $("btnAnalyser").onclick = async () => {
     }
     ticketEdite = null;
     ouvrirFiche(normaliser(rep));
-    message($("msgSaisie"), "Ticket reconnu. Vérifie et corrige la fiche ci-dessous, puis enregistre-la.", "ok");
+    if(rep.__alerte) message($("msgSaisie"), rep.__alerte, "info");
+    else message($("msgSaisie"), "Ticket reconnu. Vérifie et corrige la fiche ci-dessous, puis enregistre-la.", "ok");
   }catch(e){
     b.classList.add("erreur");
-    message($("msgSaisie"), e.message, "ko");
+    const gem = e instanceof ErreurGemini;
+    if(!gem) journaliser({ type:"erreur", titre:"Erreur inattendue pendant l'analyse", ok:false, texte:(e && e.stack) || String(e) });
+    message.silence = true;   // déjà tracé dans le journal
+    message($("msgSaisie"), (gem ? "" : "Erreur inattendue pendant l'analyse : ") + e.message +
+      "\n\nDétail complet dans le journal (🪵 en bas de page).", "ko");
+    message.silence = false;
+    ouvrirJournal();
   }finally{
     fin();
   }
@@ -1005,6 +1410,7 @@ function ouvrirFiche(obj){
   dessinerLignes();
   $("fiche").hidden = false;
   effacer($("msgFiche"));
+  sauverBrouillon();
   $("fiche").scrollIntoView({ behavior:"smooth", block:"start" });
 }
 
@@ -1041,6 +1447,7 @@ function somme(){ return analyse.produits.reduce((s, p) => s + nombre(p.prixTota
 function majTotaux(){
   const s = somme();
   $("sommeLignes").textContent = fmt(s);
+  sauverBrouillon();
   const t = nombre($("fTotal").value);
   const v = $("verdict");
   if(!t){ v.textContent = "Total imprimé non renseigné : impossible de vérifier."; v.className = "verdict"; return; }
@@ -1052,11 +1459,13 @@ $("fTotal").oninput = () => { analyse.totalIndique = nombre($("fTotal").value); 
 $("btnLigne").onclick = () => { analyse.produits.push({ nom:"", quantite:1, prixUnitaire:0, prixTotal:0 }); dessinerLignes(); };
 ["fMagasin","fAdresse","fDate","fDevise","fCommentaire","fAvis"].forEach(id => {
   const champ = { fMagasin:"magasin", fAdresse:"adresse", fDate:"date", fDevise:"devise", fCommentaire:"commentaire", fAvis:"avisPrix" }[id];
-  $(id).oninput = () => { if(analyse) analyse[champ] = $(id).value; };
+  $(id).oninput = () => { if(analyse){ analyse[champ] = $(id).value; sauverBrouillon(); } };
 });
 $("btnAnnulerFiche").onclick = () => {
   if(!confirm("Abandonner cette fiche sans l'enregistrer ?")) return;
-  $("fiche").hidden = true; analyse = null; ticketEdite = null;
+  $("fiche").hidden = true; analyse = null;
+  if(ticketEdite){ ticketEdite = null; ticketEnCours = { id:null, photos:[] }; dessinerVignettes(); }
+  sauverBrouillon();
 };
 
 $("btnEnregistrer").onclick = async () => {
@@ -1085,7 +1494,7 @@ $("btnEnregistrer").onclick = async () => {
     message($("msgFiche"), "Ticket enregistré.", "ok");
     $("fiche").hidden = true;
     analyse = null; ticketEdite = null;
-    ticketEnCours = { id:null, photos:[] };
+    effacerBrouillon();
     dessinerVignettes();
     majZoneStocker();
     effacer($("msgSaisie"));
@@ -1202,6 +1611,10 @@ async function chargerPhotosTicket(corps, t, bouton){
 }
 
 function modifierTicket(t){
+  if(!ticketEdite && (ticketEnCours.photos.length || analyse)){
+    alert("Un nouveau ticket est en cours (" + ticketEnCours.photos.length + " photo(s)).\nEnregistre-le ou abandonne-le d'abord, sinon il serait perdu.");
+    return;
+  }
   ticketEdite = t.id;
   ticketEnCours = { id: t.id, photos: (t.photos || []).map(c => ({ id: c, dataUrl:"", base64:"", chemin:c, etat:"ok" })) };
   ouvrirFiche({
@@ -1377,6 +1790,9 @@ chargerReglages();
 $("chkPhotos").checked = R.afficherPhotos;
 $("chkUnique").checked = R.afficherUniques;
 dessinerVignettes();
+dessinerJournal();
+if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+restaurerBrouillon().catch(e => journaliser({ type:"erreur", titre:"Restauration du ticket en cours impossible", ok:false, texte:e.message }));
 if(ghLisible()) chargerDonnees(true);
 else message($("msgSaisie"), "Première utilisation : ouvre la roue dentée en haut à droite pour indiquer le dépôt GitHub, le token et la clé Gemini.", "info");
 </script>
