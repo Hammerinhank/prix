@@ -171,6 +171,33 @@ details[open] summary::before{transform:rotate(90deg)}
 .jl pre{background:#0c0f14;border:1px solid var(--bord);border-radius:8px;padding:8px;max-height:320px;overflow:auto;white-space:pre-wrap;word-break:break-word;font-size:11px;margin:4px 0 0}
 .jl .sous{color:var(--doux);margin-top:8px}
 
+/* ---------- relevés en rayon ---------- */
+.rv{display:flex;gap:10px;align-items:center;border:1px solid var(--bord);border-radius:10px;background:var(--surface2);padding:8px;margin-top:8px}
+.rv img{width:58px;height:58px;object-fit:cover;border-radius:8px;flex:0 0 auto}
+.rv .etape{flex:1;font-size:13px;min-width:0;word-break:break-word}
+.rv .etape .aide-btn{margin-top:3px}
+.rv.ko{border-color:var(--rouge)}
+.rv .btns{display:flex;flex-direction:column;gap:4px}
+.rv .chrono{font-family:var(--mono);color:var(--doux);font-size:12px}
+h3.sous-titre{font-size:14px;color:var(--doux);margin:18px 0 8px}
+.lieu .adr{font-size:12px;color:var(--doux);margin-bottom:8px}
+.pr{border-bottom:1px dotted var(--bord);padding:7px 0;font-size:13px}
+.pr .l1{display:flex;gap:6px;align-items:baseline}
+.pr .nom{flex:1;font-weight:600}
+.pr .prix{font-family:var(--mono);font-weight:700;color:var(--ambre);white-space:nowrap}
+.pr .l2{color:var(--doux);font-size:12px;margin-top:1px}
+.pr .rq{font-size:12px;color:var(--ambre);margin-top:2px}
+.doute{color:var(--rouge);font-weight:700}
+.tag{display:inline-block;font-size:10px;font-weight:600;padding:1px 6px;border-radius:6px;background:var(--rouge);color:#fff;margin-left:4px;vertical-align:middle}
+.tag.promo{background:var(--ambre);color:#20242c}
+.tag.ph{background:var(--bord);color:var(--texte)}
+.mt{display:flex;gap:8px;align-items:baseline;padding:7px 9px;border:1px solid var(--bord);border-radius:8px;margin-top:6px;font-size:13px;background:var(--surface2)}
+.mt .n{flex:1;font-family:var(--mono);word-break:break-all}
+.mt .r{font-family:var(--mono);font-size:12px;color:var(--doux);text-align:right}
+.mt.ok{border-color:var(--vert);cursor:pointer}
+.mt.ko{opacity:.7}
+.mt.choisi{outline:2px solid var(--ambre)}
+
 /* ---------- paire date / devise ---------- */
 .duo{display:grid;grid-template-columns:1fr 96px;gap:8px;align-items:end}
 .duo > *{min-width:0}
@@ -261,6 +288,22 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-width:0}
   <div class="msg" id="msgFiche"></div>
 </section>
 
+<!-- ====================== RELEVÉS EN RAYON ====================== -->
+<details id="detRayons">
+  <summary>🛒 Relevés en rayon (<span id="nbLieux">0</span> lieu(x))</summary>
+  <div class="contenu">
+    <button class="btn primaire" id="btnRayon">📷 Photographier un rayon</button>
+    <p class="aide-btn">Pour chaque photo : position GPS relevée, recherche des magasins proches dans OpenStreetMap, puis Gemini identifie le magasin et chaque produit visible (nom, marque, nature, prix) en signalant ses doutes. Le relevé est ensuite enregistré tout seul. Tu peux enchaîner les photos sans attendre : elles sont traitées l'une après l'autre et gardées sur l'appareil jusqu'à leur enregistrement.</p>
+    <div id="fileRayons"></div>
+    <div class="msg" id="msgRayon"></div>
+    <h3 class="sous-titre">Lieux visités</h3>
+    <p class="aide-btn" style="margin-top:-4px;margin-bottom:8px">Les photos prises le même jour à moins de 200 m l'une de l'autre forment un même lieu. Touche un lieu pour voir tous ses produits.</p>
+    <input id="rechRayon" placeholder="Filtrer : produit, marque, nature, magasin…">
+    <div id="listeLieux" style="margin-top:10px"></div>
+    <input type="file" id="fichierRayon" accept="image/*" capture="environment" hidden>
+  </div>
+</details>
+
 <!-- ====================== HISTORIQUE ====================== -->
 <details id="detHisto">
   <summary>🧾 Historique des tickets (<span id="nbTickets">0</span>)</summary>
@@ -323,17 +366,28 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-width:0}
       <option value="gemini-2.5-pro">gemini-2.5-pro</option>
       <option value="gemini-2.0-flash">gemini-2.0-flash</option>
     </select>
+    <p class="aide">Utilisé pour les tickets comme pour les rayons.</p>
+    <button class="btn petit" id="btnTestModeles" style="margin-top:8px">🧪 Tester les modèles</button>
+    <p class="aide-btn">Demande à Google la liste des modèles Gemini ouverts à ta clé, puis envoie à chacun une petite image portant un prix : affiche ceux qui répondent, en combien de temps, et s'ils ont lu le prix correctement. Touche un modèle qui a répondu pour le choisir (puis « Enregistrer les réglages »).</p>
+    <div class="msg" id="msgModeles"></div>
+    <div id="resModeles"></div>
     <label for="pQuestion">Question envoyée avec la photo</label>
     <textarea id="pQuestion" rows="12"></textarea>
     <div class="rangee" style="margin-top:8px">
       <button class="btn petit" id="btnInitQuestion">↺ Revenir au texte par défaut</button>
     </div>
     <p class="aide">La réponse doit rester au format JSON décrit dans la question : l'application s'appuie dessus pour remplir la fiche.</p>
+    <label for="pQuestionRayon">Question envoyée avec une photo de rayon</label>
+    <textarea id="pQuestionRayon" rows="12"></textarea>
+    <div class="rangee" style="margin-top:8px">
+      <button class="btn petit" id="btnInitQuestionRayon">↺ Revenir au texte par défaut</button>
+    </div>
+    <p class="aide">L'application y ajoute automatiquement le contexte de la prise de vue : date, position, adresse et magasins proches.</p>
   </section>
 
   <section class="bloc">
     <h2>Données</h2>
-    <p class="aide">Fichier de données : <b id="infoFichier">prix.json</b> — photos rangées dans <b>photos/</b>.</p>
+    <p class="aide">Fichier de données : <b id="infoFichier">prix.json</b> — photos des tickets dans <b>photos/</b>, photos de rayon dans <b>rayons/</b>.</p>
     <div class="actions">
       <button class="btn petit" id="btnRecharger">⟳ Recharger depuis GitHub</button>
       <button class="btn petit" id="btnExport">⬇︎ Exporter le JSON</button>
@@ -386,8 +440,9 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-width:0}
 /* =========================================================
    VERSION
    ========================================================= */
-const VERSION = "V1.6.0";
+const VERSION = "V1.7.0";
 const HISTORIQUE_VERSIONS = [
+  { v:"V1.7.0", d:"27/09/2026", t:"Nouvelle section repliable « 🛒 Relevés en rayon » : photo d'un rayon, position GPS, magasins proches trouvés dans OpenStreetMap, puis Gemini identifie le magasin et chaque produit (nom, marque, nature, contenance, prix, promo) en signalant ses doutes ; enregistrement automatique, photos dans rayons/, file d'attente gardée sur l'appareil. Liste des lieux visités (photos du même jour à moins de 200 m regroupées) avec tous leurs produits, filtre, renommage et suppression. Réglages : bouton « Tester les modèles » (modèles disponibles, temps de réponse, lecture d'un prix) et question dédiée aux rayons." },
   { v:"V1.6.0", d:"26/09/2026", t:"Plus aucune photo perdue : le ticket en cours (photos, y compris celles pas encore envoyées, et fiche d'analyse non enregistrée) est gardé en permanence sur l'appareil et restauré à la réouverture de l'app, avec relance automatique des envois en échec. Nouveau bouton « Abandonner ce ticket ». Modifier un ancien ticket ne peut plus écraser un ticket en cours, et annuler une modification ne mélange plus ses photos avec le ticket suivant." },
   { v:"V1.5.0", d:"26/09/2026", t:"Nouveau journal (section 🪵 en bas de page) : chaque analyse Gemini y est tracée avec la réponse brute complète, le motif d'arrêt et les jetons consommés, ainsi que tous les messages d'erreur. Messages d'erreur de l'analyse précisant la nature du problème et quoi faire (clé refusée, quota, modèle introuvable, surcharge, réseau, blocage, réponse coupée…). Correction de la cause la plus fréquente de « réponse illisible » : la réponse était coupée faute de place (la réflexion de Gemini 2.5 consommait la limite de jetons) ; limite relevée, réflexion plafonnée, et une réponse coupée est réparée pour récupérer les produits déjà lus, avec avertissement." },
   { v:"V1.4.1", d:"22/09/2026", t:"Les données vivent désormais dans le dépôt privé prix-privatedata, qui devient le dépôt par défaut. Un appareil encore réglé sur l'ancien dépôt « prix » (qui ne contient plus que l'application) bascule automatiquement vers prix-privatedata : il ne peut plus afficher un historique vide ni recréer par erreur des données dans le dépôt public." },
@@ -428,9 +483,53 @@ Règles :
 - Additionne toi-même les lignes et compare au total imprimé pour renseigner "totalCoherent".
 - N'invente jamais une valeur illisible : laisse la chaîne vide ou le nombre à 0.`;
 
+const QUESTION_RAYON_DEFAUT = `Tu analyses une photo prise dans un magasin (supermarché, supérette, hypermarché…). Elle montre un rayon : des produits en linéaire et, sur les tranches des étagères, leurs étiquettes de prix.
+
+Objectif : relever chaque produit que tu peux identifier, avec son prix, et identifier le magasin.
+
+Réponds UNIQUEMENT par un objet JSON valide, sans texte autour, sans balises de code, au format exact suivant :
+
+{
+  "estRayon": true ou false,
+  "raison": "si estRayon vaut false, explique en une phrase ce que montre la photo",
+  "magasin": {
+    "enseigne": "enseigne (ex. Carrefour Market, Monoprix, Franprix, U Express)",
+    "nom": "nom précis du magasin s'il est connu (ex. Carrefour City Rue de Rivoli), sinon vide",
+    "confiance": "haute, moyenne ou faible",
+    "indices": "ce qui t'a permis de l'identifier : logos, couleurs et format des étiquettes, marques distributeur, magasins proches fournis"
+  },
+  "devise": "EUR",
+  "produits": [
+    {
+      "nom": "dénomination du produit, telle qu'on la lit sur l'emballage ou l'étiquette",
+      "marque": "marque du produit (marque nationale ou marque distributeur)",
+      "nature": "catégorie courte et générique, ex. yaourt nature, huile d'olive, lessive liquide, café moulu",
+      "contenance": "ex. 500 g, 1 L, 6 x 125 g ; vide si illisible",
+      "prix": 0.00,
+      "prixUnite": 0.00,
+      "unite": "unité du prix de référence : kg, L, pièce… ; vide si absent",
+      "promo": false,
+      "doutes": { "nom": false, "marque": false, "nature": false, "prix": false },
+      "remarque": "explique chaque doute signalé et toute particularité (promotion, lot, prix barré…)"
+    }
+  ],
+  "commentaire": "observations utiles sur l'ensemble du rayon"
+}
+
+Règles :
+- Une ligne par référence distincte : plusieurs exemplaires identiques côte à côte = une seule ligne.
+- Associe chaque prix à son produit : l'étiquette est en général sur la tranche juste sous le produit, alignée sur son bord gauche. Vérifie avec le libellé imprimé sur l'étiquette. Si l'association reste incertaine, mets doutes.prix = true et explique pourquoi.
+- "prix" est le prix de vente d'une unité du produit, pas le prix au kilo ou au litre ; celui-ci va dans "prixUnite".
+- En promotion (étiquette de couleur, pourcentage, prix barré, lot), mets promo = true, "prix" = prix payé pour une unité si c'est lisible, et détaille l'offre dans "remarque".
+- Signale un doute (true) dès que tu n'es pas certain : texte partiellement lisible, produit déduit de sa forme ou de sa couleur, marque devinée, étiquette cachée ou floue. Chaque doute doit être expliqué dans "remarque".
+- Prix illisible ou absent : "prix" = 0 et doutes.prix = true. N'invente jamais une valeur.
+- Magasin : combine les indices visibles sur la photo et la liste des magasins proches fournie en contexte. La position GPS en intérieur peut être fausse de 20 à 50 m : le plus proche n'est pas forcément le bon. Si rien ne permet de trancher, laisse "enseigne" vide et "confiance" = "faible".
+- Liste les produits de l'étagère du haut vers celle du bas, et de gauche à droite.
+- Les nombres sont des nombres, avec un point décimal, sans symbole monétaire.`;
+
 const REG_DEFAUT = {
   proprio:"hammerinhank", depot:"prix-privatedata", branche:"main", token:"",
-  cleGemini:"", modele:"gemini-2.5-flash", question:QUESTION_DEFAUT,
+  cleGemini:"", modele:"gemini-2.5-flash", question:QUESTION_DEFAUT, questionRayon:QUESTION_RAYON_DEFAUT, modelesTestes:[],
   afficherPhotos:false, afficherUniques:false
 };
 const CLE_REG = "prix.reglages";
@@ -445,6 +544,8 @@ function chargerReglages(){
   if(R.depot.toLowerCase() === "prix"){ R.depot = REG_DEFAUT.depot; sauverReglages(); }
   if(!R.branche) R.branche = REG_DEFAUT.branche;
   if(!R.question) R.question = QUESTION_DEFAUT;
+  if(!R.questionRayon) R.questionRayon = QUESTION_RAYON_DEFAUT;
+  if(!Array.isArray(R.modelesTestes)) R.modelesTestes = [];
 }
 function sauverReglages(){ localStorage.setItem(CLE_REG, JSON.stringify(R)); }
 
@@ -452,7 +553,8 @@ function sauverReglages(){ localStorage.setItem(CLE_REG, JSON.stringify(R)); }
    ÉTAT
    ========================================================= */
 const FICHIER = "prix.json";
-let donnees = { version:1, maj:null, tickets:[] };
+let donnees = { version:1, maj:null, tickets:[], rayons:[] };
+let donneesChargees = false;                   // prix.json lu (ou absent) : on peut écrire sans rien écraser
 let shaDonnees = null;
 let ticketEnCours = { id:null, photos:[] };   // photos: {id, dataUrl, base64, chemin|null}
 let analyse = null;                            // objet en cours d'édition
@@ -692,14 +794,16 @@ async function copierDonnees(){
     const perms = (await rd.json()).permissions || {};
     if(!(perms.push || perms.admin || perms.maintain)) throw new Error("ce token ne peut pas écrire dans « " + dest + " ».");
 
-    // 2. Inventaire : prix.json + tout le dossier photos/ (y compris les photos orphelines)
+    // 2. Inventaire : prix.json + dossiers photos/ et rayons/ (y compris les photos orphelines)
     message(zone, "Inventaire des fichiers de « " + src + " »…", "info");
     const fichiers = [];
     const principal = await infoChemin(src, FICHIER);
     if(!principal) throw new Error(FICHIER + " introuvable dans « " + src + " ».");
     fichiers.push({ chemin: FICHIER, sha: principal.sha });
-    const dossier = await infoChemin(src, "photos");
-    if(Array.isArray(dossier)) dossier.filter(f => f.type === "file").forEach(f => fichiers.push({ chemin: f.path, sha: f.sha }));
+    for(const rep of ["photos", "rayons"]){
+      const dossier = await infoChemin(src, rep);
+      if(Array.isArray(dossier)) dossier.filter(f => f.type === "file").forEach(f => fichiers.push({ chemin: f.path, sha: f.sha }));
+    }
 
     // 3. Copie, fichier par fichier, avec vérification de l'empreinte
     const total = fichiers.length;
@@ -779,7 +883,7 @@ async function chargerDonnees(silencieux){
   try{
     const txt = await ghLireTexte(FICHIER);
     if(txt === null){
-      donnees = { version:1, maj:null, tickets:[] };
+      donnees = { version:1, maj:null, tickets:[], rayons:[] };
       shaDonnees = null;
     }else{
       const j = JSON.parse(txt);
@@ -792,11 +896,14 @@ async function chargerDonnees(silencieux){
         message($("msgSaisie"), "Les données ont déménagé de « " + ancien + " » vers « " + R.depot + " » : l'application utilise désormais ce dépôt.", "info");
         return;
       }
-      donnees = { version: j.version || 1, maj: j.maj || null, tickets: Array.isArray(j.tickets) ? j.tickets : [] };
+      donnees = { version: j.version || 1, maj: j.maj || null, tickets: Array.isArray(j.tickets) ? j.tickets : [], rayons: Array.isArray(j.rayons) ? j.rayons : [] };
       shaDonnees = await ghSha(FICHIER);
     }
+    donneesChargees = true;
     dessinerHistorique();
     dessinerProduits();
+    dessinerLieux();
+    traiterFileRayons();
     if(!R.token) message($("msgSaisie"), "👁 Lecture seule : historique lu sur GitHub. Pour enregistrer de nouveaux tickets, ajoute un token dans les réglages (roue dentée).", "info");
   }catch(e){
     // L'avertissement « dépôt privé sans token » s'affiche même au chargement silencieux du démarrage.
@@ -1151,11 +1258,13 @@ class ErreurGemini extends Error{
    et on laisse largement la place au JSON (un long ticket peut dépasser 8 000 jetons). */
 function configGeneration(modele){
   const cfg = { temperature:0.2, responseMimeType:"application/json" };
-  if(/2\.5|^gemini-3/.test(modele)){
+  if(/2\.5/.test(modele)){
     cfg.maxOutputTokens = 32768;
     cfg.thinkingConfig = { thinkingBudget: /pro/.test(modele) ? 4096 : 2048 };
-  }else{
+  }else if(/^gemini-(1|2\.0)/.test(modele)){
     cfg.maxOutputTokens = 8192;
+  }else{
+    cfg.maxOutputTokens = 32768;             // modèles plus récents ou alias « -latest »
   }
   return cfg;
 }
@@ -1224,10 +1333,13 @@ function erreurHttp(statut, detail, modele){
   return ["Gemini a répondu par une erreur " + statut + (d ? " — " + d : "") + ".", "relance ; si ça persiste, consulte le journal en bas de page."];
 }
 
-async function interrogerGemini(photosBase64){
+async function interrogerGemini(photosBase64, opts){
+  opts = opts || {};
+  const resume = opts.resume || resumeTicket;
   const modele = R.modele;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modele)}:generateContent?key=${encodeURIComponent(R.cleGemini)}`;
-  const parts = [{ text: R.question }];
+  const parts = [{ text: opts.question || R.question }];
+  if(opts.contexte) parts.push({ text: opts.contexte });
   photosBase64.forEach(b => parts.push({ inline_data:{ mime_type:"image/jpeg", data:b } }));
   const generationConfig = configGeneration(modele);
   const tailleKo = Math.round(photosBase64.reduce((t, b) => t + b.length * 0.75, 0) / 1024);
@@ -1235,7 +1347,7 @@ async function interrogerGemini(photosBase64){
 
   // Entrée de journal complétée au fil de l'eau, enregistrée à la fin quoi qu'il arrive.
   const trace = { type:"gemini", titre:"", ok:true, details:{
-    "Modèle":modele, "Photos":photosBase64.length + " (" + tailleKo + " Ko)",
+    "Usage":opts.usage || "Ticket", "Modèle":modele, "Photos":photosBase64.length + " (" + tailleKo + " Ko)",
     "Limite de sortie":generationConfig.maxOutputTokens + " jetons" + (generationConfig.thinkingConfig ? ", réflexion ≤ " + generationConfig.thinkingConfig.thinkingBudget : "")
   }};
   const finir = (titre, ok, alerte) => {
@@ -1249,6 +1361,7 @@ async function interrogerGemini(photosBase64){
     finir(titre || "Analyse en échec", false);
     return err;
   };
+  if(!R.cleGemini) throw echec("Aucune clé API Gemini n'est enregistrée sur cet appareil.", "ouvre les réglages (roue dentée) et colle ta clé Gemini.", "Clé API absente");
 
   let res;
   try{
@@ -1315,11 +1428,11 @@ async function interrogerGemini(photosBase64){
   }
 
   // 1) cas normal
-  try{ const obj = JSON.parse(txt); finir(resumeTicket(obj), true); return obj; }catch(e){ trace.details["Erreur de lecture"] = e.message; }
+  try{ const obj = JSON.parse(txt); finir(resume(obj), true); return obj; }catch(e){ trace.details["Erreur de lecture"] = e.message; }
 
   // 2) du texte autour du JSON
   const extrait = extraireJson(txt);
-  if(extrait){ finir(resumeTicket(extrait) + " (texte parasite retiré)", true, true); return extrait; }
+  if(extrait){ finir(resume(extrait) + " (texte parasite retiré)", true, true); return extrait; }
 
   // 3) JSON coupé : on récupère ce qui est complet
   const repare = reparerJson(txt);
@@ -1328,7 +1441,7 @@ async function interrogerGemini(photosBase64){
     repare.__alerte = "⚠️ Réponse incomplète : " + cause + ". " + (repare.produits || []).length +
       " produit(s) récupéré(s) ; les dernières lignes du ticket et le total peuvent manquer.\nQue faire : compare avec le ticket et complète la fiche, ou relance l'analyse.";
     trace.texte = repare.__alerte;
-    finir(resumeTicket(repare) + " — réponse coupée, réparée", true, true);
+    finir(resume(repare) + " — réponse coupée, réparée", true, true);
     return repare;
   }
 
@@ -1706,13 +1819,564 @@ $("rechProduit").oninput = dessinerProduits;
 $("chkUnique").onchange = () => { R.afficherUniques = $("chkUnique").checked; sauverReglages(); dessinerProduits(); };
 
 /* =========================================================
+   RELEVÉS EN RAYON
+   ========================================================= */
+const CLE_FILE_RAYONS = "rayons", LS_FILE_RAYONS = "prix.fileRayons";
+let fileRayons = [];          // photos pas encore enregistrées dans prix.json
+let rvOccupe = false, rvEnCours = null, posRayon = null;
+const lieuxOuverts = new Set();
+
+function distance(a, b){
+  const R0 = 6371000, rad = x => x * Math.PI / 180;
+  const dLat = rad(b.lat - a.lat), dLon = rad(b.lon - a.lon);
+  const h = Math.sin(dLat/2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon/2) ** 2;
+  return 2 * R0 * Math.asin(Math.sqrt(h));
+}
+function jourLocal(iso){ return new Date(iso).toLocaleDateString("fr-CA"); }   // AAAA-MM-JJ, heure locale
+function heureCourte(iso){ return new Date(iso).toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" }); }
+async function fetchDelai(url, options, ms){
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), ms);
+  try{ return await fetch(url, Object.assign({ signal: ctl.signal }, options || {})); }
+  catch(e){ throw new Error(e.name === "AbortError" ? "pas de réponse en " + Math.round(ms/1000) + " s" : e.message); }
+  finally{ clearTimeout(t); }
+}
+
+/* ---- file d'attente persistante ---- */
+async function sauverFileRayons(){
+  const copie = fileRayons.map(it => Object.assign({}, it, { base64: undefined }));
+  try{
+    await brOperation("readwrite", st => copie.length ? st.put(copie, CLE_FILE_RAYONS) : st.delete(CLE_FILE_RAYONS));
+    try{ localStorage.removeItem(LS_FILE_RAYONS); }catch(e){}
+  }catch(e){
+    try{ if(copie.length) localStorage.setItem(LS_FILE_RAYONS, JSON.stringify(copie)); else localStorage.removeItem(LS_FILE_RAYONS); }
+    catch(e2){ message($("msgRayon"), "Impossible de garder les photos de rayon en attente sur cet appareil (" + e2.message + ").\nQue faire : laisse l'app ouverte jusqu'à leur enregistrement.", "ko"); }
+  }
+}
+async function lireFileRayons(){
+  try{ const c = await brOperation("readonly", st => st.get(CLE_FILE_RAYONS)); if(c) return c; }catch(e){}
+  try{ return JSON.parse(localStorage.getItem(LS_FILE_RAYONS) || "[]"); }catch(e){ return []; }
+}
+
+/* ---- position ---- */
+function demanderPosition(){
+  return new Promise(ok => {
+    if(!navigator.geolocation) return ok({ erreur:"géolocalisation indisponible sur cet appareil" });
+    navigator.geolocation.getCurrentPosition(
+      p => ok({ lat:p.coords.latitude, lon:p.coords.longitude, precision:Math.round(p.coords.accuracy) }),
+      e => ok({ erreur: ({ 1:"autorisation refusée — Réglages iOS › Confidentialité › Service de localisation › Safari : « Lorsque l'app est active »", 2:"position introuvable (pas de signal)", 3:"délai dépassé pour obtenir la position" })[e.code] || e.message }),
+      { enableHighAccuracy:true, timeout:20000, maximumAge:60000 });
+  });
+}
+
+/* ---- magasins proches (OpenStreetMap) ---- */
+async function magasinsProches(pos){
+  const q = `[out:json][timeout:10];nwr(around:300,${pos.lat},${pos.lon})["shop"~"^(supermarket|convenience|hypermarket|grocery|department_store|discount|wholesale|general|greengrocer|butcher|bakery|frozen_food|health_food|organic|alcohol|beverages|chemist|variety_store|deli|cheese|farm)$"];out center tags 40;`;
+  const res = await fetchDelai("https://overpass-api.de/api/interpreter", {
+    method:"POST", headers:{ "Content-Type":"application/x-www-form-urlencoded" }, body:"data=" + encodeURIComponent(q) }, 10000);
+  if(!res.ok) throw new Error("OpenStreetMap (Overpass) a répondu " + res.status);
+  const j = await res.json();
+  return (j.elements || []).map(el => {
+    const la = el.lat != null ? el.lat : el.center && el.center.lat, lo = el.lon != null ? el.lon : el.center && el.center.lon;
+    const t = el.tags || {};
+    return { nom: t.name || t.brand || "(sans nom)", enseigne: t.brand || "", type: t.shop || "",
+             adresse: [[t["addr:housenumber"], t["addr:street"]].filter(Boolean).join(" "), [t["addr:postcode"], t["addr:city"]].filter(Boolean).join(" ")].filter(Boolean).join(", "),
+             distance: (la != null && lo != null) ? Math.round(distance(pos, { lat:la, lon:lo })) : null };
+  }).filter(m => m.distance != null).sort((a, b) => a.distance - b.distance).slice(0, 8);
+}
+async function adresseProche(pos){
+  const res = await fetchDelai(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.lat}&lon=${pos.lon}&zoom=18&addressdetails=1&accept-language=fr`, {}, 8000);
+  if(!res.ok) throw new Error("Nominatim a répondu " + res.status);
+  const j = await res.json(), a = j.address || {};
+  return [[a.house_number, a.road || a.pedestrian || a.square].filter(Boolean).join(" "), [a.postcode, a.city || a.town || a.village || a.municipality].filter(Boolean).join(" ")].filter(Boolean).join(", ") || j.display_name || "";
+}
+function nomReleve(r){
+  if(r.magasinManuel) return r.magasinManuel;
+  const m = r.magasin || {};
+  return m.nom || m.enseigne || "";
+}
+async function contexteLieu(it){
+  if(!it.pos) return { sansPosition:true };
+  // Déjà identifié au même endroit le même jour ? On réutilise, sans refaire de recherche.
+  const voisins = donnees.rayons.concat(fileRayons.filter(x => x !== it && x.resultat))
+    .filter(r => r.pos && r.contexte && jourLocal(r.prise) === jourLocal(it.prise) && distance(r.pos, it.pos) <= 200);
+  if(voisins.length){
+    const v = voisins[voisins.length - 1];
+    return { adresse: v.contexte.adresse || "", magasins: v.contexte.magasins || [], magasinVoisin: nomReleve(v.resultat ? Object.assign({}, v, { magasin: v.resultat.magasin }) : v), reprisDe: v.id };
+  }
+  const [m, a] = await Promise.allSettled([magasinsProches(it.pos), adresseProche(it.pos)]);
+  const ctx = { magasins: m.status === "fulfilled" ? m.value : [], adresse: a.status === "fulfilled" ? a.value : "" };
+  const erreurs = [];
+  if(m.status === "rejected") erreurs.push("magasins proches : " + m.reason.message);
+  if(a.status === "rejected") erreurs.push("adresse : " + a.reason.message);
+  if(erreurs.length) ctx.erreurs = erreurs;
+  return ctx;
+}
+function texteContexte(it){
+  const c = it.contexte || {};
+  const l = ["CONTEXTE DE LA PRISE DE VUE (fourni par l'application, pour t'aider à identifier le magasin) :",
+             "- Date et heure : " + new Date(it.prise).toLocaleString("fr-FR")];
+  if(it.pos) l.push("- Position GPS : " + it.pos.lat.toFixed(6) + ", " + it.pos.lon.toFixed(6) + " (précision ± " + it.pos.precision + " m)");
+  else l.push("- Position GPS inconnue.");
+  if(c.adresse) l.push("- Adresse approximative : " + c.adresse);
+  if(c.magasinVoisin) l.push("- Magasin identifié sur une photo prise peu avant, au même endroit : " + c.magasinVoisin);
+  if(c.magasins && c.magasins.length){
+    l.push("- Magasins recensés par OpenStreetMap à proximité, du plus proche au plus éloigné :");
+    c.magasins.forEach(m => l.push("  • " + m.nom + (m.enseigne && m.enseigne !== m.nom ? " (enseigne " + m.enseigne + ")" : "") + (m.type ? " [" + m.type + "]" : "") + " à " + m.distance + " m" + (m.adresse ? " — " + m.adresse : "")));
+  }else if(it.pos) l.push("- Aucun magasin recensé par OpenStreetMap à moins de 300 m (ou recherche indisponible).");
+  return l.join("\n");
+}
+function resumeRayon(o){
+  if(o && o.estRayon === false) return "Rayon : pas un rayon de magasin";
+  const m = (o && o.magasin) || {};
+  return "Rayon : " + (m.nom || m.enseigne || "magasin ?") + " — " + (((o && o.produits) || []).length) + " produit(s)";
+}
+function normaliserRayon(o){
+  const m = (o.magasin && typeof o.magasin === "object") ? o.magasin : { enseigne: String(o.magasin || "") };
+  return {
+    estRayon: o.estRayon !== false, raison: String(o.raison || ""),
+    magasin: { enseigne: String(m.enseigne || ""), nom: String(m.nom || ""), confiance: String(m.confiance || ""), indices: String(m.indices || "") },
+    devise: String(o.devise || "EUR"),
+    produits: (Array.isArray(o.produits) ? o.produits : []).map(p => {
+      const d = p.doutes || {};
+      return { nom: String(p.nom || ""), marque: String(p.marque || ""), nature: String(p.nature || ""), contenance: String(p.contenance || ""),
+               prix: nombre(p.prix), prixUnite: nombre(p.prixUnite), unite: String(p.unite || ""), promo: !!p.promo,
+               doutes: { nom: !!d.nom, marque: !!d.marque, nature: !!d.nature, prix: !!d.prix }, remarque: String(p.remarque || "") };
+    }),
+    commentaire: String(o.commentaire || "")
+  };
+}
+
+/* ---- prise de vue ---- */
+$("btnRayon").onclick = () => {
+  $("fichierRayon").click();               // d'abord l'appareil photo (iOS exige un clic direct)
+  posRayon = demanderPosition();            // la position se calcule pendant la prise de vue
+};
+$("fichierRayon").onchange = async e => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  const posP = posRayon || demanderPosition();
+  posRayon = null;
+  if(!f) return;
+  let it;
+  try{
+    const dataUrl = await compresser(f, 2048);   // assez fin pour lire les étiquettes
+    it = { id: idCourt(), prise: new Date().toISOString(), dataUrl, pos:null, etape:"📍 Position en cours…", attentePosition:true, depuis: Date.now() };
+    fileRayons.push(it);
+    await sauverFileRayons();                     // la photo est à l'abri tout de suite
+    dessinerFileRayons();
+  }catch(err){
+    message($("msgRayon"), "Photo inutilisable : " + err.message, "ko");
+    return;
+  }
+  const pos = await posP;
+  if(pos.erreur) it.posErreur = pos.erreur; else it.pos = pos;
+  delete it.attentePosition;
+  it.etape = "En attente"; it.depuis = Date.now();
+  await sauverFileRayons();
+  dessinerFileRayons();
+  traiterFileRayons();
+};
+
+/* ---- traitement, une photo après l'autre ---- */
+async function traiterFileRayons(){
+  if(rvOccupe) return;
+  rvOccupe = true;
+  try{
+    for(;;){
+      const it = fileRayons.find(x => !x.erreur && !x.attentePosition);
+      if(!it) break;
+      rvEnCours = it;
+      await traiterReleve(it);
+    }
+  }finally{ rvOccupe = false; rvEnCours = null; }
+}
+async function traiterReleve(it){
+  const etape = t => { it.etape = t; it.depuis = Date.now(); dessinerFileRayons(); };
+  const encore = () => fileRayons.includes(it);          // abandonné en cours de route ?
+  try{
+    if(!R.cleGemini) throw new Error("Aucune clé API Gemini n'est enregistrée sur cet appareil.\nQue faire : ouvre les réglages (roue dentée), colle ta clé Gemini, puis touche « Réessayer ».");
+    if(!ghConfigure()) throw new Error("Token GitHub manquant : la photo et le relevé ne peuvent pas être enregistrés.\nQue faire : ajoute ton token dans les réglages (roue dentée), puis touche « Réessayer ».");
+
+    // 1. envoi de la photo en arrière-plan, pendant la suite
+    const chemin = "rayons/" + it.id + ".jpg";
+    let envoi = Promise.resolve();
+    if(!it.chemin){
+      envoi = ghEcrire(chemin, it.dataUrl.split(",")[1], "Photo de rayon " + chemin)
+        .then(() => { it.chemin = chemin; sauverFileRayons(); })
+        .catch(e => { throw new Error("Envoi de la photo vers GitHub impossible : " + e.message + "\nQue faire : vérifie le réseau puis touche « Réessayer » (l'analyse déjà faite est conservée)."); });
+      envoi.catch(() => {});
+    }
+
+    // 2. lieu : adresse et magasins proches
+    if(!it.contexte){
+      etape(it.pos ? "🔎 Recherche des magasins proches…" : "🔎 Sans position : pas de recherche de magasin");
+      it.contexte = await contexteLieu(it);
+      await sauverFileRayons();
+      if(!encore()) return;
+    }
+
+    // 3. Gemini
+    if(!it.resultat){
+      etape("🤖 Analyse par Gemini (" + R.modele + ")…");
+      const t0 = Date.now();
+      const rep = await interrogerGemini([it.dataUrl.split(",")[1]], { question: R.questionRayon, contexte: texteContexte(it), usage:"Rayon", resume: resumeRayon });
+      it.resultat = normaliserRayon(rep);
+      it.duree = Math.round((Date.now() - t0) / 100) / 10;
+      it.modele = R.modele;
+      if(rep.__alerte) it.alerte = rep.__alerte;
+      await sauverFileRayons();
+      if(!encore()) return;
+    }
+    if(!it.resultat.estRayon && !it.garderQuandMeme){
+      it.nonRayon = true;
+      throw new Error("Gemini ne voit pas de rayon de magasin sur cette photo" + (it.resultat.raison ? " : " + it.resultat.raison : ".") +
+        "\nQue faire : abandonne cette photo, ou touche « Réessayer » pour l'enregistrer quand même.");
+    }
+
+    // 4. la photo doit être arrivée
+    if(!it.chemin){ etape("☁︎ Envoi de la photo…"); await envoi; }
+    if(!encore()) return;
+
+    // 5. ajout au fichier de données
+    etape("💾 Enregistrement…");
+    if(!donneesChargees) await chargerDonnees(true);
+    if(!donneesChargees) throw new Error(FICHIER + " n'a pas encore pu être lu sur GitHub : l'enregistrer maintenant risquerait d'écraser tes données.\nQue faire : vérifie le réseau, puis touche « Réessayer ».");
+    const r = it.resultat;
+    const releve = { id: it.id, prise: it.prise, pos: it.pos || null, posErreur: it.posErreur || null, photo: it.chemin,
+      modele: it.modele, duree: it.duree,
+      contexte: { adresse: (it.contexte && it.contexte.adresse) || "", magasins: ((it.contexte && it.contexte.magasins) || []).slice(0, 3) },
+      magasin: r.magasin, devise: r.devise, produits: r.produits, commentaire: r.commentaire, alerte: it.alerte || null };
+    donnees.rayons.push(releve);
+    try{
+      await enregistrerDonnees("Rayon — " + (nomReleve(releve) || "magasin ?") + " — " + r.produits.length + " produit(s)");
+    }catch(e){
+      donnees.rayons = donnees.rayons.filter(x => x !== releve);
+      throw new Error("Enregistrement de " + FICHIER + " impossible : " + e.message + "\nQue faire : touche « Réessayer » (la photo et l'analyse sont conservées).");
+    }
+    fileRayons = fileRayons.filter(x => x !== it);
+    await sauverFileRayons();
+    dessinerFileRayons(); dessinerLieux();
+    const doutes = r.produits.filter(p => Object.values(p.doutes).some(Boolean)).length;
+    message($("msgRayon"), "✅ " + (nomReleve(releve) || "Magasin non identifié") + " : " + r.produits.length + " produit(s) relevé(s)" +
+      (doutes ? ", dont " + doutes + " avec un doute signalé" : "") + " (" + it.duree + " s)." + (it.alerte ? "\n" + it.alerte : ""), it.alerte ? "info" : "ok");
+  }catch(e){
+    if(!encore()) return;
+    it.erreur = e.message; it.etape = "erreur";
+    await sauverFileRayons();
+    dessinerFileRayons();
+    message.silence = e instanceof ErreurGemini;        // déjà au journal
+    message($("msgRayon"), "Photo de rayon non traitée : " + e.message, "ko");
+    message.silence = false;
+  }
+}
+
+function dessinerFileRayons(){
+  const z = $("fileRayons");
+  z.innerHTML = "";
+  fileRayons.forEach(it => {
+    const d = document.createElement("div");
+    d.className = "rv" + (it.erreur ? " ko" : "");
+    const pos = it.pos ? "📍 ± " + it.pos.precision + " m" : (it.posErreur ? "📍 position inconnue : " + it.posErreur : "");
+    const lieu = it.contexte && it.contexte.magasins && it.contexte.magasins.length ? " · plus proche : " + it.contexte.magasins[0].nom + " (" + it.contexte.magasins[0].distance + " m)" : "";
+    d.innerHTML = `<img class="zoomable" src="${it.dataUrl}" alt="Photo de rayon en attente">
+      <div class="etape">${it.erreur ? "⚠︎ " + echapper(it.erreur) : echapper(it.etape || "")} ${it.erreur ? "" : '<span class="chrono"></span>'}
+        <div class="aide-btn">${echapper(heureCourte(it.prise) + (pos ? " · " + pos : "") + lieu)}</div></div>
+      <div class="btns">${it.erreur ? '<button class="btn petit" data-a="relancer">🔁 Réessayer</button>' : ""}<button class="btn petit" data-a="abandon">🗑 Abandonner</button></div>`;
+    d.querySelector("img").onclick = () => ouvrirVisionneuse([it.dataUrl], 0);
+    const chr = d.querySelector(".chrono");
+    if(chr) chr.dataset.depuis = it.depuis || Date.now();
+    const b = d.querySelector('[data-a="relancer"]');
+    if(b) b.onclick = () => {
+      if(it.nonRayon) it.garderQuandMeme = true;
+      it.erreur = null; it.etape = "En attente"; it.depuis = Date.now();
+      sauverFileRayons(); dessinerFileRayons(); effacer($("msgRayon"));
+      traiterFileRayons();
+    };
+    d.querySelector('[data-a="abandon"]').onclick = () => {
+      if(!confirm("Abandonner cette photo de rayon ?" + (it.chemin ? "\nElle reste dans le dépôt, mais ne sera pas enregistrée comme relevé." : "\nElle n'a pas encore été envoyée : elle sera définitivement perdue."))) return;
+      fileRayons = fileRayons.filter(x => x !== it);
+      sauverFileRayons(); dessinerFileRayons();
+    };
+    z.appendChild(d);
+  });
+  majChronosRayons();
+}
+function majChronosRayons(){
+  document.querySelectorAll("#fileRayons .chrono").forEach(c => {
+    const s = Math.floor((Date.now() - Number(c.dataset.depuis)) / 1000);
+    c.textContent = s >= 1 ? s + " s" : "";
+  });
+}
+setInterval(majChronosRayons, 1000);
+
+/* ---- lieux : même jour et moins de 200 m ---- */
+function lieuxRayons(){
+  const rs = donnees.rayons.slice().sort((a, b) => a.prise < b.prise ? -1 : 1);
+  const groupes = [];
+  for(const r of rs){
+    const jour = jourLocal(r.prise);
+    const cibles = r.pos
+      ? groupes.filter(g => g.jour === jour && g.releves.some(x => x.pos && distance(x.pos, r.pos) <= 200))
+      : groupes.filter(g => g.jour === jour && g.sansPos);
+    if(!cibles.length){ groupes.push({ jour, sansPos: !r.pos, releves:[r] }); continue; }
+    const g0 = cibles[0];
+    g0.releves.push(r);
+    cibles.slice(1).forEach(g => { g0.releves.push(...g.releves); groupes.splice(groupes.indexOf(g), 1); });
+  }
+  groupes.forEach(g => {
+    g.releves.sort((a, b) => a.prise < b.prise ? -1 : 1);
+    g.id = g.releves[0].id;
+    g.nom = nomLieu(g);
+    g.adresse = (g.releves.find(r => r.contexte && r.contexte.adresse) || { contexte:{} }).contexte.adresse || "";
+  });
+  return groupes.sort((a, b) => a.releves[0].prise < b.releves[0].prise ? 1 : -1);
+}
+function nomLieu(g){
+  const manuel = g.releves.find(r => r.magasinManuel);
+  if(manuel) return manuel.magasinManuel;
+  const poids = { haute:3, moyenne:2, faible:1 }, score = {};
+  g.releves.forEach(r => {
+    const n = r.magasin && (r.magasin.nom || r.magasin.enseigne);
+    if(n) score[n] = (score[n] || 0) + (poids[r.magasin.confiance] || 1);
+  });
+  const meilleur = Object.entries(score).sort((a, b) => b[1] - a[1])[0];
+  if(meilleur) return meilleur[0];
+  const osm = g.releves.find(r => r.contexte && r.contexte.magasins && r.contexte.magasins.length);
+  if(osm) return osm.contexte.magasins[0].nom + " (d'après la position)";
+  if(g.sansPos) return "Lieu sans position";
+  return "Magasin non identifié";
+}
+function aDoute(p){ return p.doutes && Object.values(p.doutes).some(Boolean); }
+function champ(p, cle, texte){ return echapper(texte) + (p.doutes && p.doutes[cle] ? ' <span class="doute" title="Doute signalé par Gemini">?</span>' : ""); }
+
+function dessinerLieux(){
+  const lieux = lieuxRayons();
+  $("nbLieux").textContent = lieux.length;
+  const z = $("listeLieux");
+  if(!lieux.length){ z.innerHTML = '<div class="vide">Aucun relevé en rayon pour l\'instant.</div>'; return; }
+  const q = $("rechRayon").value.trim().toLowerCase();
+  const correspond = (p, g) => !q || [p.nom, p.marque, p.nature, g.nom].join(" ").toLowerCase().includes(q);
+  z.innerHTML = "";
+  let visibles = 0;
+  lieux.forEach(g => {
+    const lignes = [];
+    g.releves.forEach((r, i) => (r.produits || []).forEach(p => { if(correspond(p, g)) lignes.push({ p, i }); }));
+    if(q && !lignes.length) return;
+    visibles++;
+    const nbProduits = g.releves.reduce((t, r) => t + (r.produits || []).length, 0);
+    const nbDoutes = g.releves.reduce((t, r) => t + (r.produits || []).filter(aDoute).length, 0);
+    const heures = heureCourte(g.releves[0].prise) + (g.releves.length > 1 ? "–" + heureCourte(g.releves[g.releves.length - 1].prise) : "");
+    const plusieurs = g.releves.length > 1;
+    const d = document.createElement("div");
+    d.className = "ticket lieu" + (lieuxOuverts.has(g.id) || q ? " ouvert" : "");
+    d.innerHTML = `<div class="tete"><span class="magasin">🏪 ${echapper(g.nom)}</span><span class="date">${dateLisible(g.jour)}</span><span class="montant">${nbProduits}</span></div>
+      <div class="corps">
+        <div class="adr">${echapper([g.adresse, heures, g.releves.length + " photo(s)", nbProduits + " produit(s)", nbDoutes ? nbDoutes + " avec doute" : ""].filter(Boolean).join(" · "))}</div>
+        ${lignes.map(({ p, i }) => `<div class="pr">
+          <div class="l1"><span class="nom">${champ(p, "nom", p.nom || "(sans nom)")}${plusieurs ? `<span class="tag ph">📷${i + 1}</span>` : ""}${p.promo ? '<span class="tag promo">promo</span>' : ""}${aDoute(p) ? '<span class="tag">à vérifier</span>' : ""}</span>
+            <span class="prix">${p.prix ? fmt(p.prix) + " " + echapper(g.releves[i].devise === "EUR" ? "€" : g.releves[i].devise || "") : "—"}${p.doutes && p.doutes.prix ? ' <span class="doute">?</span>' : ""}</span></div>
+          <div class="l2">${[p.marque ? "Marque : " + champ(p, "marque", p.marque) : (p.doutes && p.doutes.marque ? 'Marque : <span class="doute">?</span>' : ""),
+                            p.nature ? "Nature : " + champ(p, "nature", p.nature) : "",
+                            p.contenance ? echapper(p.contenance) : "",
+                            p.prixUnite ? fmt(p.prixUnite) + " €/" + echapper(p.unite || "?") : ""].filter(Boolean).join(" · ")}</div>
+          ${p.remarque ? `<div class="rq">${echapper(p.remarque)}</div>` : ""}
+        </div>`).join("") || '<div class="vide">Aucun produit identifié.</div>'}
+        ${g.releves.map((r, i) => (r.magasin && r.magasin.indices) || r.commentaire || r.alerte ? `<div class="comm"><b>Photo ${i + 1} — ${heureCourte(r.prise)}${r.modele ? " · " + echapper(r.modele) + (r.duree ? " en " + String(r.duree).replace(".", ",") + " s" : "") : ""}</b>${r.alerte ? echapper(r.alerte) + "\n" : ""}${r.magasin && r.magasin.indices ? "Magasin (" + echapper(r.magasin.confiance || "?") + ") : " + echapper(r.magasin.indices) + "\n" : ""}${echapper(r.commentaire || "")}</div>` : "").join("")}
+        <div class="photos" data-photos></div>
+        <div class="actions">
+          <button class="btn petit" data-a="photos">🖼 Voir les photos</button>
+          <button class="btn petit" data-a="renommer">✎ Renommer le magasin</button>
+          <button class="btn petit" data-a="supprimer">🗑 Supprimer ce lieu</button>
+        </div>
+      </div>`;
+    const corps = d.querySelector(".corps");
+    d.querySelector(".tete").onclick = () => {
+      d.classList.toggle("ouvert");
+      if(d.classList.contains("ouvert")) lieuxOuverts.add(g.id); else lieuxOuverts.delete(g.id);
+    };
+    const bPh = d.querySelector('[data-a="photos"]');
+    bPh.onclick = () => chargerPhotosTicket(corps, { photos: g.releves.map(r => r.photo).filter(Boolean) }, bPh);
+    d.querySelector('[data-a="renommer"]').onclick = () => renommerLieu(g, d.querySelector('[data-a="renommer"]'));
+    d.querySelector('[data-a="supprimer"]').onclick = () => supprimerLieu(g, d.querySelector('[data-a="supprimer"]'));
+    z.appendChild(d);
+  });
+  if(!visibles) z.innerHTML = '<div class="vide">Aucun produit ne correspond au filtre.</div>';
+}
+$("rechRayon").oninput = dessinerLieux;
+
+async function renommerLieu(g, bouton){
+  const nom = prompt("Nom du magasin pour ce lieu (" + g.releves.length + " photo(s)) :", g.nom.replace(/ \(d'après la position\)$/, ""));
+  if(nom === null) return;
+  if(!ghConfigure()){ message($("msgRayon"), "Un token GitHub est nécessaire pour enregistrer (réglages).", "ko"); return; }
+  const avant = g.releves.map(r => r.magasinManuel);
+  g.releves.forEach(r => { if(nom.trim()) r.magasinManuel = nom.trim(); else delete r.magasinManuel; });
+  const fin = chrono(bouton, "✎ Enregistrement");
+  try{
+    await enregistrerDonnees("Rayon — magasin renommé : " + (nom.trim() || "(automatique)"));
+    dessinerLieux();
+  }catch(e){
+    g.releves.forEach((r, i) => { if(avant[i]) r.magasinManuel = avant[i]; else delete r.magasinManuel; });
+    message($("msgRayon"), "Renommage non enregistré : " + e.message, "ko");
+  }finally{ fin(); }
+}
+async function supprimerLieu(g, bouton){
+  if(!confirm("Supprimer le lieu « " + g.nom + " » du " + dateLisible(g.jour) + " et ses " + g.releves.length + " relevé(s) ?\nLes photos restent dans le dépôt.")) return;
+  if(!ghConfigure()){ message($("msgRayon"), "Un token GitHub est nécessaire pour enregistrer (réglages).", "ko"); return; }
+  const avant = donnees.rayons;
+  donnees.rayons = donnees.rayons.filter(r => !g.releves.includes(r));
+  const fin = chrono(bouton, "🗑 Suppression");
+  try{
+    await enregistrerDonnees("Rayon — lieu supprimé : " + g.nom);
+    lieuxOuverts.delete(g.id);
+    dessinerLieux();
+  }catch(e){
+    donnees.rayons = avant;
+    message($("msgRayon"), "Suppression non enregistrée : " + e.message, "ko");
+  }finally{ fin(); }
+}
+
+async function restaurerFileRayons(){
+  const f = await lireFileRayons();
+  if(!Array.isArray(f) || !f.length) return;
+  fileRayons = f.map(it => {
+    if(it.attentePosition){ delete it.attentePosition; it.posErreur = it.posErreur || "position non relevée (l'app a été fermée trop tôt)"; }
+    if(!it.erreur){ it.etape = "En attente"; }
+    it.depuis = Date.now();
+    return it;
+  });
+  dessinerFileRayons();
+  $("detRayons").open = true;
+  message($("msgRayon"), "📥 " + fileRayons.length + " photo(s) de rayon retrouvée(s), pas encore enregistrée(s) : le traitement reprend dès que les données sont chargées.", "info");
+  journaliser({ type:"info", titre:"Photos de rayon en attente restaurées (" + fileRayons.length + ")", ok:true });
+}
+
+/* =========================================================
+   TEST DES MODÈLES GEMINI
+   ========================================================= */
+function imageTest(){
+  const c = document.createElement("canvas");
+  c.width = 360; c.height = 140;
+  const x = c.getContext("2d");
+  x.fillStyle = "#fff"; x.fillRect(0, 0, 360, 140);
+  x.fillStyle = "#111"; x.font = "bold 28px sans-serif"; x.fillText("Café moulu 250 g", 20, 44);
+  x.font = "bold 64px sans-serif"; x.fillText("2,49 €", 20, 118);
+  return c.toDataURL("image/jpeg", 0.9).split(",")[1];
+}
+function remplirModeles(){
+  const sel = $("pModele"), actuel = sel.value || R.modele;
+  const base = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"];
+  const testes = R.modelesTestes.filter(m => m.ok).sort((a, b) => a.ms - b.ms);
+  const noms = [...new Set(testes.map(m => m.nom).concat(base, [R.modele, actuel]).filter(Boolean))];
+  sel.innerHTML = noms.map(n => {
+    const t = R.modelesTestes.find(m => m.nom === n);
+    const lib = n + (t ? (t.ok ? " — " + (t.ms / 1000).toFixed(1).replace(".", ",") + " s" + (t.lu ? " ✓" : " (prix mal lu)") : " — ne répond pas") : "");
+    return `<option value="${echapper(n)}">${echapper(lib)}</option>`;
+  }).join("");
+  sel.value = actuel;
+}
+async function testerModeles(){
+  const cle = $("pCle").value.trim();
+  const zone = $("msgModeles"), res = $("resModeles");
+  if(!cle){ message(zone, "Colle d'abord ta clé API Gemini ci-dessus.", "ko"); return; }
+  const fin = chrono($("btnTestModeles"), "🧪 Test en cours");
+  res.innerHTML = "";
+  try{
+    message(zone, "Liste des modèles demandée à Google…", "info");
+    let r;
+    try{ r = await fetchDelai("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000&key=" + encodeURIComponent(cle), {}, 15000); }
+    catch(e){ throw new Error("Google injoignable (" + e.message + "). Que faire : vérifie le réseau et réessaie."); }
+    if(!r.ok){
+      let d = ""; try{ d = (await r.json()).error.message; }catch(e){}
+      const [nature, remede] = erreurHttp(r.status, d, "(liste)");
+      throw new Error(nature + "\nQue faire : " + remede);
+    }
+    const tous = (await r.json()).models || [];
+    const candidats = tous
+      .filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
+      .map(m => m.name.replace(/^models\//, ""))
+      .filter(n => /^gemini/.test(n) && !/embed|tts|image|audio|live|computer-use|robotics|aqa|veo|imagen/i.test(n));
+    if(!candidats.length) throw new Error("Aucun modèle Gemini utilisable n'est ouvert à cette clé.");
+    const img = imageTest();
+    const resultats = [];
+    let faits = 0, suivant = 0;
+    const ligne = (m) => {
+      const d = document.createElement("div");
+      d.className = "mt " + (m.ok ? "ok" : "ko") + (m.nom === $("pModele").value ? " choisi" : "");
+      d.innerHTML = `<span>${m.ok ? (m.lu ? "✅" : "🟡") : "❌"}</span><span class="n">${echapper(m.nom)}</span><span class="r">${m.ok ? (m.ms / 1000).toFixed(1).replace(".", ",") + " s<br>" + (m.lu ? "prix lu : 2,49" : "a lu : " + echapper((m.texte || "").slice(0, 20))) : echapper(m.erreur)}</span>`;
+      if(m.ok) d.onclick = () => {
+        remplirModeles(); $("pModele").value = m.nom;
+        res.querySelectorAll(".mt").forEach(x => x.classList.remove("choisi")); d.classList.add("choisi");
+      };
+      return d;
+    };
+    const tester = async nom => {
+      const cfg = { temperature:0, maxOutputTokens:2048 };
+      if(/2\.5/.test(nom)) cfg.thinkingConfig = { thinkingBudget: /pro/.test(nom) ? 128 : 0 };
+      const t0 = Date.now();
+      const m = { nom, ok:false };
+      try{
+        const rr = await fetchDelai(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(nom)}:generateContent?key=${encodeURIComponent(cle)}`, {
+          method:"POST", headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ contents:[{ role:"user", parts:[{ text:"Quel est le prix écrit sur cette étiquette ? Réponds uniquement par le nombre, avec un point décimal." }, { inline_data:{ mime_type:"image/jpeg", data:img } }] }], generationConfig: cfg })
+        }, 45000);
+        m.ms = Date.now() - t0;
+        if(!rr.ok){
+          let d = ""; try{ d = (await rr.json()).error.message; }catch(e){}
+          m.erreur = ({ 400:"refusé (400)", 403:"accès refusé", 404:"introuvable", 429:"quota dépassé", 500:"erreur Google", 503:"surchargé" })[rr.status] || ("erreur " + rr.status);
+          m.detail = d;
+        }else{
+          const j = await rr.json();
+          const parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
+          m.texte = parts.filter(p => !p.thought).map(p => p.text || "").join("").trim();
+          m.ok = !!m.texte;
+          if(!m.ok) m.erreur = "réponse vide";
+          m.lu = /2[.,]49/.test(m.texte || "");
+        }
+      }catch(e){ m.ms = Date.now() - t0; m.erreur = e.message; }
+      return m;
+    };
+    // 3 tests à la fois, avec décompte
+    const travailleur = async () => {
+      while(suivant < candidats.length){
+        const nom = candidats[suivant++];
+        const m = await tester(nom);
+        resultats.push(m); faits++;
+        res.appendChild(ligne(m));
+        message(zone, "Test " + faits + " / " + candidats.length + " · reste " + (candidats.length - faits) + " · dernier : " + nom, "info");
+      }
+    };
+    await Promise.all([travailleur(), travailleur(), travailleur()]);
+    resultats.sort((a, b) => (b.ok - a.ok) || (b.lu - a.lu) || (a.ms - b.ms));
+    res.innerHTML = ""; resultats.forEach(m => res.appendChild(ligne(m)));
+    R.modelesTestes = resultats.map(m => ({ nom:m.nom, ok:m.ok, lu:!!m.lu, ms:m.ms, erreur:m.erreur || null, quand:new Date().toISOString() }));
+    const enregistres = JSON.parse(localStorage.getItem(CLE_REG) || "{}");
+    enregistres.modelesTestes = R.modelesTestes;                  // seule la liste testée est mémorisée d'office
+    localStorage.setItem(CLE_REG, JSON.stringify(enregistres));
+    remplirModeles();
+    const ok = resultats.filter(m => m.ok), lus = ok.filter(m => m.lu);
+    message(zone, "✅ " + ok.length + " modèle(s) sur " + resultats.length + " répondent, " + lus.length + " ont lu le prix correctement." +
+      (lus.length ? "\nLe plus rapide à bien lire : " + lus[0].nom + " (" + (lus[0].ms / 1000).toFixed(1).replace(".", ",") + " s)." : "") +
+      "\nTouche un modèle pour le choisir, puis « Enregistrer les réglages ».", "ok");
+    journaliser({ type:"info", titre:"Test des modèles : " + ok.length + "/" + resultats.length + " répondent", ok:true,
+      details: Object.fromEntries(resultats.map(m => [m.nom, m.ok ? (m.ms / 1000).toFixed(1) + " s" + (m.lu ? ", prix lu" : ", prix mal lu : " + (m.texte || "").slice(0, 30)) : "échec : " + m.erreur + (m.detail ? " — " + m.detail.slice(0, 120) : "")])) });
+  }catch(e){
+    message(zone, "Test impossible : " + e.message, "ko");
+  }finally{ fin(); }
+}
+$("btnTestModeles").onclick = testerModeles;
+
+/* =========================================================
    RÉGLAGES — PAGE
    ========================================================= */
 $("btnRoue").onclick = () => {
   $("pProprio").value = R.proprio; $("pDepot").value = R.depot; $("pBranche").value = R.branche;
   $("infoDepotDonnees").textContent = R.depot;
-  $("pToken").value = R.token; $("pCle").value = R.cleGemini; $("pModele").value = R.modele;
+  $("pToken").value = R.token; $("pCle").value = R.cleGemini;
+  remplirModeles(); $("pModele").value = R.modele;
   $("pQuestion").value = R.question;
+  $("pQuestionRayon").value = R.questionRayon;
+  effacer($("msgModeles")); $("resModeles").innerHTML = "";
   effacer($("msgGh")); effacer($("msgDonnees"));
   $("pageParams").hidden = false;
 };
@@ -1722,12 +2386,17 @@ $("btnBasculer").onclick = basculerDonnees;
 $("btnInitQuestion").onclick = () => {
   if(confirm("Remplacer la question par le texte par défaut ?")) $("pQuestion").value = QUESTION_DEFAUT;
 };
+$("btnInitQuestionRayon").onclick = () => {
+  if(confirm("Remplacer la question des rayons par le texte par défaut ?")) $("pQuestionRayon").value = QUESTION_RAYON_DEFAUT;
+};
 $("btnEnrParams").onclick = async () => {
   R.proprio = $("pProprio").value.trim() || REG_DEFAUT.proprio; R.depot = $("pDepot").value.trim() || REG_DEFAUT.depot;
   R.branche = $("pBranche").value.trim() || "main"; R.token = $("pToken").value.trim();
   R.cleGemini = $("pCle").value.trim(); R.modele = $("pModele").value;
   R.question = $("pQuestion").value.trim() || QUESTION_DEFAUT;
+  R.questionRayon = $("pQuestionRayon").value.trim() || QUESTION_RAYON_DEFAUT;
   sauverReglages();
+  traiterFileRayons();
   $("pageParams").hidden = true;
   await chargerDonnees(false);
 };
@@ -1756,7 +2425,7 @@ $("btnRecharger").onclick = async () => {
   const fin = chrono($("btnRecharger"), "⟳ Lecture");
   try{
     await chargerDonnees(false);
-    message($("msgDonnees"), donnees.tickets.length + " ticket(s) chargé(s).", "ok");
+    message($("msgDonnees"), donnees.tickets.length + " ticket(s) et " + donnees.rayons.length + " photo(s) de rayon chargés.", "ok");
   }finally{
     fin();
   }
@@ -1793,6 +2462,9 @@ dessinerVignettes();
 dessinerJournal();
 if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 restaurerBrouillon().catch(e => journaliser({ type:"erreur", titre:"Restauration du ticket en cours impossible", ok:false, texte:e.message }));
+dessinerLieux();
+restaurerFileRayons().then(() => { if(donneesChargees) traiterFileRayons(); })
+  .catch(e => journaliser({ type:"erreur", titre:"Restauration des photos de rayon impossible", ok:false, texte:e.message }));
 if(ghLisible()) chargerDonnees(true);
 else message($("msgSaisie"), "Première utilisation : ouvre la roue dentée en haut à droite pour indiquer le dépôt GitHub, le token et la clé Gemini.", "info");
 </script>
