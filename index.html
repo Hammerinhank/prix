@@ -179,6 +179,9 @@ details[open] summary::before{transform:rotate(90deg)}
 .rv.ko{border-color:var(--rouge)}
 .rv .btns{display:flex;flex-direction:column;gap:4px}
 .rv .chrono{font-family:var(--mono);color:var(--doux);font-size:12px}
+.onglets{display:flex;gap:6px;margin:0 0 10px;flex-wrap:wrap}
+.onglets button{flex:1 1 0;border:1px solid var(--bord);background:var(--surface2);color:var(--texte);border-radius:999px;padding:8px 6px;font-size:13px;font-weight:600;white-space:nowrap}
+.onglets button.actif{background:var(--ambre);color:#20242c;border-color:var(--ambre)}
 h3.sous-titre{font-size:14px;color:var(--doux);margin:18px 0 8px}
 .lieu .adr{font-size:12px;color:var(--doux);margin-bottom:8px}
 .pr{border-bottom:1px dotted var(--bord);padding:7px 0;font-size:13px}
@@ -293,14 +296,22 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-width:0}
   <summary>🛒 Relevés en rayon (<span id="nbLieux">0</span> lieu(x))</summary>
   <div class="contenu">
     <button class="btn primaire" id="btnRayon">📷 Photographier un rayon</button>
+    <button class="btn" id="btnImage" style="margin-top:10px">🌐 Analyser une image (internet)</button>
+    <p class="aide-btn">Pour une image déjà enregistrée sur l'appareil (capture d'écran d'un site marchand ou d'un drive, catalogue, prospectus…) : pas de géolocalisation ni de magasin, le relevé est noté « internet ». Les produits sont analysés de la même façon, avec une question distincte modifiable dans les réglages.</p>
     <p class="aide-btn">Pour chaque photo : position GPS relevée, recherche des magasins proches dans OpenStreetMap, puis Gemini identifie le magasin et chaque produit visible (nom, marque, nature, prix) en signalant ses doutes. Le relevé est ensuite enregistré tout seul. Tu peux enchaîner les photos sans attendre : elles sont traitées l'une après l'autre et gardées sur l'appareil jusqu'à leur enregistrement.</p>
     <div id="fileRayons"></div>
     <div class="msg" id="msgRayon"></div>
     <h3 class="sous-titre">Lieux visités</h3>
     <p class="aide-btn" style="margin-top:-4px;margin-bottom:8px">Les photos prises le même jour à moins de 200 m l'une de l'autre forment un même lieu. Touche un lieu pour voir tous ses produits.</p>
+    <div class="onglets" id="ongletsRayons">
+      <button data-o="tout">Tout</button>
+      <button data-o="geo">📍 Géolocalisés</button>
+      <button data-o="web">🌐 Internet</button>
+    </div>
     <input id="rechRayon" placeholder="Filtrer : produit, marque, nature, magasin…">
     <div id="listeLieux" style="margin-top:10px"></div>
     <input type="file" id="fichierRayon" accept="image/*" capture="environment" hidden>
+    <input type="file" id="fichierImage" accept="image/*" hidden>
   </div>
 </details>
 
@@ -383,6 +394,12 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-width:0}
       <button class="btn petit" id="btnInitQuestionRayon">↺ Revenir au texte par défaut</button>
     </div>
     <p class="aide">L'application y ajoute automatiquement le contexte de la prise de vue : date, position, adresse et magasins proches.</p>
+    <label for="pQuestionInternet">Question envoyée avec une image d'internet</label>
+    <textarea id="pQuestionInternet" rows="12"></textarea>
+    <div class="rangee" style="margin-top:8px">
+      <button class="btn petit" id="btnInitQuestionInternet">↺ Revenir au texte par défaut</button>
+    </div>
+    <p class="aide">Même format de réponse que pour les rayons, sans magasin ni contexte de lieu.</p>
   </section>
 
   <section class="bloc">
@@ -440,8 +457,9 @@ input[type=date]{-webkit-appearance:none;appearance:none;min-width:0}
 /* =========================================================
    VERSION
    ========================================================= */
-const VERSION = "V1.7.0";
+const VERSION = "V1.8.0";
 const HISTORIQUE_VERSIONS = [
+  { v:"V1.8.0", d:"28/09/2026", t:"Relevés en rayon : nouveau bouton « 🌐 Analyser une image » pour une image enregistrée sur l'appareil (capture d'un site, catalogue…), notée « internet », sans géolocalisation ni magasin, analysée avec sa propre question modifiable dans les réglages. Onglets « Tout / Géolocalisés / Internet » en tête de la liste des lieux." },
   { v:"V1.7.0", d:"27/09/2026", t:"Nouvelle section repliable « 🛒 Relevés en rayon » : photo d'un rayon, position GPS, magasins proches trouvés dans OpenStreetMap, puis Gemini identifie le magasin et chaque produit (nom, marque, nature, contenance, prix, promo) en signalant ses doutes ; enregistrement automatique, photos dans rayons/, file d'attente gardée sur l'appareil. Liste des lieux visités (photos du même jour à moins de 200 m regroupées) avec tous leurs produits, filtre, renommage et suppression. Réglages : bouton « Tester les modèles » (modèles disponibles, temps de réponse, lecture d'un prix) et question dédiée aux rayons." },
   { v:"V1.6.0", d:"26/09/2026", t:"Plus aucune photo perdue : le ticket en cours (photos, y compris celles pas encore envoyées, et fiche d'analyse non enregistrée) est gardé en permanence sur l'appareil et restauré à la réouverture de l'app, avec relance automatique des envois en échec. Nouveau bouton « Abandonner ce ticket ». Modifier un ancien ticket ne peut plus écraser un ticket en cours, et annuler une modification ne mélange plus ses photos avec le ticket suivant." },
   { v:"V1.5.0", d:"26/09/2026", t:"Nouveau journal (section 🪵 en bas de page) : chaque analyse Gemini y est tracée avec la réponse brute complète, le motif d'arrêt et les jetons consommés, ainsi que tous les messages d'erreur. Messages d'erreur de l'analyse précisant la nature du problème et quoi faire (clé refusée, quota, modèle introuvable, surcharge, réseau, blocage, réponse coupée…). Correction de la cause la plus fréquente de « réponse illisible » : la réponse était coupée faute de place (la réflexion de Gemini 2.5 consommait la limite de jetons) ; limite relevée, réflexion plafonnée, et une réponse coupée est réparée pour récupérer les produits déjà lus, avec avertissement." },
@@ -527,9 +545,46 @@ Règles :
 - Liste les produits de l'étagère du haut vers celle du bas, et de gauche à droite.
 - Les nombres sont des nombres, avec un point décimal, sans symbole monétaire.`;
 
+const QUESTION_INTERNET_DEFAUT = `Tu analyses une image trouvée sur internet ou une capture d'écran : page d'un site marchand ou d'un drive, catalogue, prospectus, photo de rayon publiée en ligne… Elle montre un ou plusieurs produits avec leurs prix.
+
+Objectif : relever chaque produit que tu peux identifier, avec son prix. Ne cherche pas à identifier un magasin.
+
+Réponds UNIQUEMENT par un objet JSON valide, sans texte autour, sans balises de code, au format exact suivant :
+
+{
+  "contientProduits": true ou false,
+  "raison": "si contientProduits vaut false, explique en une phrase ce que montre l'image",
+  "devise": "EUR",
+  "produits": [
+    {
+      "nom": "dénomination du produit, telle qu'elle est écrite",
+      "marque": "marque du produit (marque nationale ou marque distributeur)",
+      "nature": "catégorie courte et générique, ex. yaourt nature, huile d'olive, lessive liquide, café moulu",
+      "contenance": "ex. 500 g, 1 L, 6 x 125 g ; vide si non indiqué",
+      "prix": 0.00,
+      "prixUnite": 0.00,
+      "unite": "unité du prix de référence : kg, L, pièce… ; vide si absent",
+      "promo": false,
+      "doutes": { "nom": false, "marque": false, "nature": false, "prix": false },
+      "remarque": "explique chaque doute signalé et toute particularité (promotion, lot, prix barré…)"
+    }
+  ],
+  "commentaire": "observations utiles sur l'ensemble de l'image (site ou document reconnu, date de validité d'une offre…)"
+}
+
+Règles :
+- Une ligne par produit distinct.
+- Associe chaque prix au produit auquel il se rapporte (en général juste à côté ou juste en dessous de sa vignette). Si l'association est incertaine, mets doutes.prix = true et explique pourquoi.
+- "prix" est le prix actuel d'une unité du produit, pas le prix au kilo ou au litre ; celui-ci va dans "prixUnite".
+- Un prix barré est l'ancien prix : mets promo = true, "prix" = nouveau prix, et indique l'ancien dans "remarque". Même chose pour un lot, un pourcentage ou une offre.
+- Signale un doute (true) dès que tu n'es pas certain : texte partiellement lisible ou coupé, produit déduit de son image seulement, marque devinée. Chaque doute doit être expliqué dans "remarque".
+- Prix illisible ou absent : "prix" = 0 et doutes.prix = true. N'invente jamais une valeur.
+- Liste les produits dans l'ordre de lecture : de haut en bas, puis de gauche à droite.
+- Les nombres sont des nombres, avec un point décimal, sans symbole monétaire.`;
+
 const REG_DEFAUT = {
   proprio:"hammerinhank", depot:"prix-privatedata", branche:"main", token:"",
-  cleGemini:"", modele:"gemini-2.5-flash", question:QUESTION_DEFAUT, questionRayon:QUESTION_RAYON_DEFAUT, modelesTestes:[],
+  cleGemini:"", modele:"gemini-2.5-flash", question:QUESTION_DEFAUT, questionRayon:QUESTION_RAYON_DEFAUT, questionInternet:QUESTION_INTERNET_DEFAUT, ongletRayons:"tout", modelesTestes:[],
   afficherPhotos:false, afficherUniques:false
 };
 const CLE_REG = "prix.reglages";
@@ -545,6 +600,8 @@ function chargerReglages(){
   if(!R.branche) R.branche = REG_DEFAUT.branche;
   if(!R.question) R.question = QUESTION_DEFAUT;
   if(!R.questionRayon) R.questionRayon = QUESTION_RAYON_DEFAUT;
+  if(!R.questionInternet) R.questionInternet = QUESTION_INTERNET_DEFAUT;
+  if(!["tout", "geo", "web"].includes(R.ongletRayons)) R.ongletRayons = "tout";
   if(!Array.isArray(R.modelesTestes)) R.modelesTestes = [];
 }
 function sauverReglages(){ localStorage.setItem(CLE_REG, JSON.stringify(R)); }
@@ -1896,6 +1953,7 @@ function nomReleve(r){
   return m.nom || m.enseigne || "";
 }
 async function contexteLieu(it){
+  if(it.source === "internet") return { internet:true };
   if(!it.pos) return { sansPosition:true };
   // Déjà identifié au même endroit le même jour ? On réutilise, sans refaire de recherche.
   const voisins = donnees.rayons.concat(fileRayons.filter(x => x !== it && x.resultat))
@@ -1926,6 +1984,10 @@ function texteContexte(it){
   }else if(it.pos) l.push("- Aucun magasin recensé par OpenStreetMap à moins de 300 m (ou recherche indisponible).");
   return l.join("\n");
 }
+function resumeInternet(o){
+  if(o && o.contientProduits === false) return "Internet : aucun produit trouvé";
+  return "Internet — " + (((o && o.produits) || []).length) + " produit(s)";
+}
 function resumeRayon(o){
   if(o && o.estRayon === false) return "Rayon : pas un rayon de magasin";
   const m = (o && o.magasin) || {};
@@ -1934,7 +1996,7 @@ function resumeRayon(o){
 function normaliserRayon(o){
   const m = (o.magasin && typeof o.magasin === "object") ? o.magasin : { enseigne: String(o.magasin || "") };
   return {
-    estRayon: o.estRayon !== false, raison: String(o.raison || ""),
+    estRayon: o.estRayon !== false && o.contientProduits !== false, raison: String(o.raison || ""),
     magasin: { enseigne: String(m.enseigne || ""), nom: String(m.nom || ""), confiance: String(m.confiance || ""), indices: String(m.indices || "") },
     devise: String(o.devise || "EUR"),
     produits: (Array.isArray(o.produits) ? o.produits : []).map(p => {
@@ -1978,6 +2040,23 @@ $("fichierRayon").onchange = async e => {
   traiterFileRayons();
 };
 
+$("btnImage").onclick = () => $("fichierImage").click();
+$("fichierImage").onchange = async e => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if(!f) return;
+  try{
+    const dataUrl = await compresser(f, 2048);
+    const it = { id: idCourt(), prise: new Date().toISOString(), dataUrl, source:"internet", pos:null, etape:"En attente", depuis: Date.now() };
+    fileRayons.push(it);
+    await sauverFileRayons();
+    dessinerFileRayons();
+    traiterFileRayons();
+  }catch(err){
+    message($("msgRayon"), "Image inutilisable : " + err.message + "\nQue faire : choisis une image JPEG ou PNG.", "ko");
+  }
+};
+
 /* ---- traitement, une photo après l'autre ---- */
 async function traiterFileRayons(){
   if(rvOccupe) return;
@@ -2010,7 +2089,7 @@ async function traiterReleve(it){
 
     // 2. lieu : adresse et magasins proches
     if(!it.contexte){
-      etape(it.pos ? "🔎 Recherche des magasins proches…" : "🔎 Sans position : pas de recherche de magasin");
+      etape(it.source === "internet" ? "🌐 Image internet : pas de recherche de lieu" : it.pos ? "🔎 Recherche des magasins proches…" : "🔎 Sans position : pas de recherche de magasin");
       it.contexte = await contexteLieu(it);
       await sauverFileRayons();
       if(!encore()) return;
@@ -2020,7 +2099,10 @@ async function traiterReleve(it){
     if(!it.resultat){
       etape("🤖 Analyse par Gemini (" + R.modele + ")…");
       const t0 = Date.now();
-      const rep = await interrogerGemini([it.dataUrl.split(",")[1]], { question: R.questionRayon, contexte: texteContexte(it), usage:"Rayon", resume: resumeRayon });
+      const web = it.source === "internet";
+      const rep = await interrogerGemini([it.dataUrl.split(",")[1]], web
+        ? { question: R.questionInternet, usage:"Internet", resume: resumeInternet }
+        : { question: R.questionRayon, contexte: texteContexte(it), usage:"Rayon", resume: resumeRayon });
       it.resultat = normaliserRayon(rep);
       it.duree = Math.round((Date.now() - t0) / 100) / 10;
       it.modele = R.modele;
@@ -2030,7 +2112,7 @@ async function traiterReleve(it){
     }
     if(!it.resultat.estRayon && !it.garderQuandMeme){
       it.nonRayon = true;
-      throw new Error("Gemini ne voit pas de rayon de magasin sur cette photo" + (it.resultat.raison ? " : " + it.resultat.raison : ".") +
+      throw new Error((it.source === "internet" ? "Gemini ne trouve aucun produit avec un prix sur cette image" : "Gemini ne voit pas de rayon de magasin sur cette photo") + (it.resultat.raison ? " : " + it.resultat.raison : ".") +
         "\nQue faire : abandonne cette photo, ou touche « Réessayer » pour l'enregistrer quand même.");
     }
 
@@ -2043,13 +2125,13 @@ async function traiterReleve(it){
     if(!donneesChargees) await chargerDonnees(true);
     if(!donneesChargees) throw new Error(FICHIER + " n'a pas encore pu être lu sur GitHub : l'enregistrer maintenant risquerait d'écraser tes données.\nQue faire : vérifie le réseau, puis touche « Réessayer ».");
     const r = it.resultat;
-    const releve = { id: it.id, prise: it.prise, pos: it.pos || null, posErreur: it.posErreur || null, photo: it.chemin,
+    const releve = { id: it.id, prise: it.prise, source: it.source === "internet" ? "internet" : "magasin", pos: it.pos || null, posErreur: it.posErreur || null, photo: it.chemin,
       modele: it.modele, duree: it.duree,
       contexte: { adresse: (it.contexte && it.contexte.adresse) || "", magasins: ((it.contexte && it.contexte.magasins) || []).slice(0, 3) },
       magasin: r.magasin, devise: r.devise, produits: r.produits, commentaire: r.commentaire, alerte: it.alerte || null };
     donnees.rayons.push(releve);
     try{
-      await enregistrerDonnees("Rayon — " + (nomReleve(releve) || "magasin ?") + " — " + r.produits.length + " produit(s)");
+      await enregistrerDonnees((releve.source === "internet" ? "Internet" : "Rayon — " + (nomReleve(releve) || "magasin ?")) + " — " + r.produits.length + " produit(s)");
     }catch(e){
       donnees.rayons = donnees.rayons.filter(x => x !== releve);
       throw new Error("Enregistrement de " + FICHIER + " impossible : " + e.message + "\nQue faire : touche « Réessayer » (la photo et l'analyse sont conservées).");
@@ -2058,7 +2140,7 @@ async function traiterReleve(it){
     await sauverFileRayons();
     dessinerFileRayons(); dessinerLieux();
     const doutes = r.produits.filter(p => Object.values(p.doutes).some(Boolean)).length;
-    message($("msgRayon"), "✅ " + (nomReleve(releve) || "Magasin non identifié") + " : " + r.produits.length + " produit(s) relevé(s)" +
+    message($("msgRayon"), "✅ " + (releve.source === "internet" ? "🌐 Internet" : nomReleve(releve) || "Magasin non identifié") + " : " + r.produits.length + " produit(s) relevé(s)" +
       (doutes ? ", dont " + doutes + " avec un doute signalé" : "") + " (" + it.duree + " s)." + (it.alerte ? "\n" + it.alerte : ""), it.alerte ? "info" : "ok");
   }catch(e){
     if(!encore()) return;
@@ -2077,7 +2159,7 @@ function dessinerFileRayons(){
   fileRayons.forEach(it => {
     const d = document.createElement("div");
     d.className = "rv" + (it.erreur ? " ko" : "");
-    const pos = it.pos ? "📍 ± " + it.pos.precision + " m" : (it.posErreur ? "📍 position inconnue : " + it.posErreur : "");
+    const pos = it.source === "internet" ? "🌐 internet" : it.pos ? "📍 ± " + it.pos.precision + " m" : (it.posErreur ? "📍 position inconnue : " + it.posErreur : "");
     const lieu = it.contexte && it.contexte.magasins && it.contexte.magasins.length ? " · plus proche : " + it.contexte.magasins[0].nom + " (" + it.contexte.magasins[0].distance + " m)" : "";
     d.innerHTML = `<img class="zoomable" src="${it.dataUrl}" alt="Photo de rayon en attente">
       <div class="etape">${it.erreur ? "⚠︎ " + echapper(it.erreur) : echapper(it.etape || "")} ${it.erreur ? "" : '<span class="chrono"></span>'}
@@ -2116,10 +2198,13 @@ function lieuxRayons(){
   const groupes = [];
   for(const r of rs){
     const jour = jourLocal(r.prise);
-    const cibles = r.pos
-      ? groupes.filter(g => g.jour === jour && g.releves.some(x => x.pos && distance(x.pos, r.pos) <= 200))
-      : groupes.filter(g => g.jour === jour && g.sansPos);
-    if(!cibles.length){ groupes.push({ jour, sansPos: !r.pos, releves:[r] }); continue; }
+    const web = r.source === "internet";
+    const cibles = web
+      ? groupes.filter(g => g.jour === jour && g.internet)
+      : r.pos
+        ? groupes.filter(g => g.jour === jour && !g.internet && g.releves.some(x => x.pos && distance(x.pos, r.pos) <= 200))
+        : groupes.filter(g => g.jour === jour && g.sansPos);
+    if(!cibles.length){ groupes.push({ jour, internet: web, sansPos: !web && !r.pos, releves:[r] }); continue; }
     const g0 = cibles[0];
     g0.releves.push(r);
     cibles.slice(1).forEach(g => { g0.releves.push(...g.releves); groupes.splice(groupes.indexOf(g), 1); });
@@ -2133,6 +2218,7 @@ function lieuxRayons(){
   return groupes.sort((a, b) => a.releves[0].prise < b.releves[0].prise ? 1 : -1);
 }
 function nomLieu(g){
+  if(g.internet) return "Internet";
   const manuel = g.releves.find(r => r.magasinManuel);
   if(manuel) return manuel.magasinManuel;
   const poids = { haute:3, moyenne:2, faible:1 }, score = {};
@@ -2151,10 +2237,20 @@ function aDoute(p){ return p.doutes && Object.values(p.doutes).some(Boolean); }
 function champ(p, cle, texte){ return echapper(texte) + (p.doutes && p.doutes[cle] ? ' <span class="doute" title="Doute signalé par Gemini">?</span>' : ""); }
 
 function dessinerLieux(){
-  const lieux = lieuxRayons();
-  $("nbLieux").textContent = lieux.length;
+  const tous = lieuxRayons();
+  $("nbLieux").textContent = tous.length;
+  const nbWeb = tous.filter(g => g.internet).length;
+  const libelles = { tout:"Tout (" + tous.length + ")", geo:"📍 Géolocalisés (" + (tous.length - nbWeb) + ")", web:"🌐 Internet (" + nbWeb + ")" };
+  document.querySelectorAll("#ongletsRayons button").forEach(b => {
+    b.textContent = libelles[b.dataset.o];
+    b.classList.toggle("actif", b.dataset.o === R.ongletRayons);
+  });
+  const lieux = tous.filter(g => R.ongletRayons === "tout" || (R.ongletRayons === "web") === !!g.internet);
   const z = $("listeLieux");
-  if(!lieux.length){ z.innerHTML = '<div class="vide">Aucun relevé en rayon pour l\'instant.</div>'; return; }
+  if(!lieux.length){
+    z.innerHTML = '<div class="vide">' + ({ tout:"Aucun relevé pour l'instant.", geo:"Aucun relevé fait en magasin pour l'instant.", web:"Aucune image d'internet analysée pour l'instant." })[R.ongletRayons] + '</div>';
+    return;
+  }
   const q = $("rechRayon").value.trim().toLowerCase();
   const correspond = (p, g) => !q || [p.nom, p.marque, p.nature, g.nom].join(" ").toLowerCase().includes(q);
   z.innerHTML = "";
@@ -2170,7 +2266,7 @@ function dessinerLieux(){
     const plusieurs = g.releves.length > 1;
     const d = document.createElement("div");
     d.className = "ticket lieu" + (lieuxOuverts.has(g.id) || q ? " ouvert" : "");
-    d.innerHTML = `<div class="tete"><span class="magasin">🏪 ${echapper(g.nom)}</span><span class="date">${dateLisible(g.jour)}</span><span class="montant">${nbProduits}</span></div>
+    d.innerHTML = `<div class="tete"><span class="magasin">${g.internet ? "🌐" : "🏪"} ${echapper(g.nom)}</span><span class="date">${dateLisible(g.jour)}</span><span class="montant">${nbProduits}</span></div>
       <div class="corps">
         <div class="adr">${echapper([g.adresse, heures, g.releves.length + " photo(s)", nbProduits + " produit(s)", nbDoutes ? nbDoutes + " avec doute" : ""].filter(Boolean).join(" · "))}</div>
         ${lignes.map(({ p, i }) => `<div class="pr">
@@ -2186,7 +2282,7 @@ function dessinerLieux(){
         <div class="photos" data-photos></div>
         <div class="actions">
           <button class="btn petit" data-a="photos">🖼 Voir les photos</button>
-          <button class="btn petit" data-a="renommer">✎ Renommer le magasin</button>
+          ${g.internet ? "" : '<button class="btn petit" data-a="renommer">✎ Renommer le magasin</button>'}
           <button class="btn petit" data-a="supprimer">🗑 Supprimer ce lieu</button>
         </div>
       </div>`;
@@ -2197,13 +2293,21 @@ function dessinerLieux(){
     };
     const bPh = d.querySelector('[data-a="photos"]');
     bPh.onclick = () => chargerPhotosTicket(corps, { photos: g.releves.map(r => r.photo).filter(Boolean) }, bPh);
-    d.querySelector('[data-a="renommer"]').onclick = () => renommerLieu(g, d.querySelector('[data-a="renommer"]'));
+    const bRen = d.querySelector('[data-a="renommer"]');
+    if(bRen) bRen.onclick = () => renommerLieu(g, bRen);
     d.querySelector('[data-a="supprimer"]').onclick = () => supprimerLieu(g, d.querySelector('[data-a="supprimer"]'));
     z.appendChild(d);
   });
   if(!visibles) z.innerHTML = '<div class="vide">Aucun produit ne correspond au filtre.</div>';
 }
 $("rechRayon").oninput = dessinerLieux;
+document.querySelectorAll("#ongletsRayons button").forEach(b => b.onclick = () => {
+  R.ongletRayons = b.dataset.o;
+  const enr = JSON.parse(localStorage.getItem(CLE_REG) || "{}");
+  enr.ongletRayons = R.ongletRayons;                  // mémorise l'onglet sans toucher aux autres réglages
+  localStorage.setItem(CLE_REG, JSON.stringify(enr));
+  dessinerLieux();
+});
 
 async function renommerLieu(g, bouton){
   const nom = prompt("Nom du magasin pour ce lieu (" + g.releves.length + " photo(s)) :", g.nom.replace(/ \(d'après la position\)$/, ""));
@@ -2221,7 +2325,7 @@ async function renommerLieu(g, bouton){
   }finally{ fin(); }
 }
 async function supprimerLieu(g, bouton){
-  if(!confirm("Supprimer le lieu « " + g.nom + " » du " + dateLisible(g.jour) + " et ses " + g.releves.length + " relevé(s) ?\nLes photos restent dans le dépôt.")) return;
+  if(!confirm("Supprimer " + (g.internet ? "les images d'internet" : "le lieu « " + g.nom + " »") + " du " + dateLisible(g.jour) + " et ses " + g.releves.length + " relevé(s) ?\nLes photos restent dans le dépôt.")) return;
   if(!ghConfigure()){ message($("msgRayon"), "Un token GitHub est nécessaire pour enregistrer (réglages).", "ko"); return; }
   const avant = donnees.rayons;
   donnees.rayons = donnees.rayons.filter(r => !g.releves.includes(r));
@@ -2376,6 +2480,7 @@ $("btnRoue").onclick = () => {
   remplirModeles(); $("pModele").value = R.modele;
   $("pQuestion").value = R.question;
   $("pQuestionRayon").value = R.questionRayon;
+  $("pQuestionInternet").value = R.questionInternet;
   effacer($("msgModeles")); $("resModeles").innerHTML = "";
   effacer($("msgGh")); effacer($("msgDonnees"));
   $("pageParams").hidden = false;
@@ -2386,6 +2491,9 @@ $("btnBasculer").onclick = basculerDonnees;
 $("btnInitQuestion").onclick = () => {
   if(confirm("Remplacer la question par le texte par défaut ?")) $("pQuestion").value = QUESTION_DEFAUT;
 };
+$("btnInitQuestionInternet").onclick = () => {
+  if(confirm("Remplacer la question des images d'internet par le texte par défaut ?")) $("pQuestionInternet").value = QUESTION_INTERNET_DEFAUT;
+};
 $("btnInitQuestionRayon").onclick = () => {
   if(confirm("Remplacer la question des rayons par le texte par défaut ?")) $("pQuestionRayon").value = QUESTION_RAYON_DEFAUT;
 };
@@ -2395,6 +2503,7 @@ $("btnEnrParams").onclick = async () => {
   R.cleGemini = $("pCle").value.trim(); R.modele = $("pModele").value;
   R.question = $("pQuestion").value.trim() || QUESTION_DEFAUT;
   R.questionRayon = $("pQuestionRayon").value.trim() || QUESTION_RAYON_DEFAUT;
+  R.questionInternet = $("pQuestionInternet").value.trim() || QUESTION_INTERNET_DEFAUT;
   sauverReglages();
   traiterFileRayons();
   $("pageParams").hidden = true;
